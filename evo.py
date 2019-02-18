@@ -805,7 +805,7 @@ for i in range(20):
 
 num_generations = 30
 keep = 0 # keep this many fittest individuals each generation. 
-kill = 0 # kill this many of the least fit individuals
+kill = 20 # kill this many of the least fit individuals
 N = 50 # number of individuals in population
 P = 2 # number of parents
 remove_slowest = 20
@@ -827,6 +827,9 @@ def choose_n_parents(pop, N, type = 'weighted'):
         elif type == 'rank':
             # rank selection: the least fit is eliminated with fitness zero like this
             fitness = list(range(len(parent_pop)))
+
+            # we can square the ranked fitness to be more extreme
+            fitness = np.multiply(fitness, fitness)
 
             # if you don't like killing the least fit, do this:
             #sfitness = list(range(1, len(parent_pop)+1))
@@ -875,16 +878,17 @@ for g in range(num_generations):
     for i in range(len(pop)-keep, len(pop)):
         offspring.append(pop[i])
 
-    # kill the worst ones
+    # kill the worst ones: NB this assumes that the pop is sorted w.r.t. fitness
     for i in range(kill):
         del pop[i]
 
-    # TODO kill the slow ones
 
+    print("breeding from")
+    print(pop)
 
     # breed the rest
     while len(offspring) < N:
-        f1 = Individual(input_shape, Dense(units = 10, activation = 'softmax'), loss, settings, parents=choose_n_parents(pop, P, type = 'weighted'))
+        f1 = Individual(input_shape, Dense(units = 10, activation = 'softmax'), loss, settings, parents=choose_n_parents(pop, P, type = 'rank'))
         f1.get_fitness(X_train_sample, Y_train_sample, X_test_sample, Y_test_sample)
         offspring.append((f1.fitness, f1))
 
@@ -900,7 +904,7 @@ with open('genotypes.pkl', 'rb') as myfile:
 pop = []
 for g in genotypes:
     ind = Individual(input_shape, Dense(units = 10, activation = 'softmax'), loss, settings, parents=None)
-    ind.get_fitness(X_train[0:10000], Y_train[0:10000], X_test[0:1000], Y_test[0:1000], g)
+    ind.get_fitness(X_train[0:20000], Y_train[0:20000], X_test[0:1000], Y_test[0:1000], g)
     pop.append((ind.fitness, ind))
 
 
