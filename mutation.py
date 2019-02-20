@@ -12,8 +12,6 @@ def mutate_optimiser(optimiser, learning_rate, size, limits, mutrate):
 
     return(optimiser, learning_rate)
 
-
-
 def mutate_batchsize(batchsize, mutrate, min_size = 8, max_size = 8192):
     # change a batch size up or down by a factor of 2
     # within bounds set by min/max _size
@@ -90,7 +88,6 @@ def mutate_addition(value, size, limits, mutrate):
 
 def mutate_product(value, size, limits, mutrate):
     # mutate a float of value, by amount size, within limits
-
     if np.random.uniform(0, 1) < mutrate:
 
         # choose a size from -size to +size
@@ -105,3 +102,63 @@ def mutate_product(value, size, limits, mutrate):
         if value > limits[1]: value = limits[1]
 
     return value
+
+def mutate_layer(layer):
+    if layer["type"] == "full":
+        layer = mutate_full_layer(layer)
+
+    if layer["type"] == "conv":
+        layer = mutate_conv_layer(layer)
+
+    if layer["type"] == "pool":
+        layer = mutate_pool_layer(layer)
+
+    return(layer)
+
+
+def mutate_conv_layer(layer):
+
+    # add or subtract a filter
+    layer["filters"] = mutate_int_fixed(layer["filters"], 1, [1, 1000], layer["mutrate"])
+    layer["kernel"] = mutate_int_fixed(layer["kernel"], 1, [1, 1000], layer["mutrate"])
+    layer["strides"] = mutate_int_fixed(layer["strides"], 1, [1, 1000], layer["mutrate"])
+
+    if np.random.uniform(0, 1) < layer["mutrate"]:
+        layer["padding"] = np.random.choice(["valid", "same"])
+
+    layer["dropout"] = mutate_product(layer["dropout"], 1.05, [0.0, 1.0], layer["mutrate"])
+
+    if np.random.uniform(0, 1) < layer["mutrate"]/10: # 1/10th of the mutation rate, because this is a big change
+        layer["norm"] = np.random.choice([0, 1])
+
+    layer["mutrate"] = mutate_product(layer["mutrate"], 1.05, [0.01, 1.0], layer["mutrate"])
+
+    return(layer)
+
+
+def mutate_pool_layer(layer):
+
+    layer["pool_size"] = mutate_int_fixed(layer["pool_size"], 1, [1, 1000], layer["mutrate"])
+    layer["strides"] = mutate_int_fixed(layer["strides"], 1, [1, 1000], layer["mutrate"])
+
+    if np.random.uniform(0, 1) < layer["mutrate"]:
+        layer["padding"] = np.random.choice(["valid", "same"])
+
+    layer["mutrate"] = mutate_product(layer["mutrate"], 1.05, [0.01, 1.0], layer["mutrate"])
+
+    return(layer)
+
+
+def mutate_full_layer(layer):
+
+    layer["units"] = mutate_int(layer["units"], 0.2, [1, 10000], layer["mutrate"])
+    layer["dropout"] = mutate_product(layer["dropout"], 1.05, [0.0, 1.0], layer["mutrate"])
+
+    if np.random.uniform(0, 1) < layer["mutrate"]/10:
+        layer["norm"] = np.random.choice([0, 1])
+
+    layer["mutrate"] = mutate_product(layer["mutrate"], 1.05, [0.01, 1.0], layer["mutrate"])
+
+    return(layer)
+
+

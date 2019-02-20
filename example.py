@@ -58,9 +58,13 @@ lineage.initialise(5)
 	# 5 generations of population size 20
 lineage.evolve([10]*5 + [20]*5, num_parents = 2)
 
-# then for another 50 generations of 50 individuals, with 4 parents each
+# then for another 50 generations of 40 individuals, with 4 parents each
 # we'll also kill off the least-fit 20 individuals in each generation
-lineage.evolve([50]*50, num_parents = 4, kill = 20)
+# first we have to increase the population size to 40, to give us enough to kill 20
+lineage.evolve([40]*1, num_parents = 4)
+
+# now we can do our next 50 generations
+lineage.evolve([40]*50, num_parents = 4, kill = 20)
 
 
 lineage = Lineage(50, input_shape, output_config, loss, X_train, Y_train, X_val, Y_val,trainsize = 20000, valsize = 2000)
