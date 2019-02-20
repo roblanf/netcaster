@@ -35,7 +35,7 @@ class Individual(object):
         print("\nOffspring genotype")
         self.print_genotype()
 
-    def random_genotype(self):
+    def random_genotype(self, mutrate = 0.1):
         # generate a random CNN genotype with sensible defaults
 
         # number of conv and pooling layers at the start
@@ -51,14 +51,14 @@ class Individual(object):
         # to use Adam:
         opt = ("Adam", 0.001)
 
-        params =   {"mutation": 0.05,
+        params =   {"mutation": mutrate,
                     "recomb": 1.0, # generally we expect higher recombination to be better
                     "optimiser": opt[0],
                     "learning_rate": opt[1],
-                    "learning_rate_mutrate": 0.05, # mutation size for learning rate
-                    "slip": 0.05, # chance of adding new layers to network
-                    "epoch_mutrate": 0.05, # mutation rate applied to # epochs
-                    "batchsize_mutrate": 0.05 # mutation rate for batch size
+                    "learning_rate_mutrate": mutrate, # mutation size for learning rate
+                    "slip": mutrate, # chance of adding new layers to network
+                    "epoch_mutrate": mutrate, # mutation rate applied to # epochs
+                    "batchsize_mutrate": mutrate # mutation rate for batch size
                     }
 
         network = []
@@ -73,7 +73,8 @@ class Individual(object):
 
         training = []
         for i in range(epochs):
-            training.append(np.random.choice([512, 1024])) # add minibatch sizes for epochs
+            # add minibatch sizes for epochs
+            training.append(np.random.choice([512, 1024])) 
 
         # genotype has parameters, then network architecture, then training epochs
         genotype = {'params': params, 'network': network, 'training': training}
@@ -82,7 +83,8 @@ class Individual(object):
 
 
     def build_network(self):
-        # build network from genotype
+        # build a keras network from genotype
+
         self.model = Sequential()
 
         # add layers one by one
@@ -93,10 +95,12 @@ class Individual(object):
         if self.genotype["network"][layer_num]["type"] in ["conv", "pool"]:
             self.model.add(Flatten())
 
+        # add the output layer (this is user-specified)
         output_layer = Dense.from_config(self.out_config)
         output_layer.name = "output_layer"        
         self.model.add(output_layer)  
 
+        # add an optimiser and compile the model
         optimiser = get_optimiser(self.genotype["params"]["optimiser"], self.genotype["params"]["learning_rate"])
         self.model.compile(optimizer = optimiser, 
                            loss = self.loss, 
@@ -112,6 +116,7 @@ class Individual(object):
 
         start_time = time()
 
+        # train over each epoch
         for epoch_batch_size in self.genotype["training"]: 
             self.model.fit(X_train, Y_train, batch_size = epoch_batch_size, epochs = 1, shuffle = True, verbose = 0)
 
@@ -135,7 +140,7 @@ class Individual(object):
         self.loss = evals[0]
         self.fitness = evals[1] #fitness is just the test accuracy
 
-    def get_fitness(self, X_train, Y_train, X_val, Y_val, genotype = None):
+    def get_fitness(self, X_train, Y_train, X_val, Y_val):
         # a general function to return the fitness of any individual
         # and calculate it if it hasn't already been calculated
 
@@ -156,7 +161,7 @@ class Individual(object):
                         # we build impossible networks
                         
                         pass
-            else: 
+            else: # genotype is already specified, e.g. by loading it in
                 try:
                     self.build_network()
                     self.train_network(X_train, Y_train)
