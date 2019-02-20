@@ -113,7 +113,7 @@ class Individual(object):
         start_time = time()
 
         for epoch_batch_size in self.genotype["training"]: 
-            self.model.fit(X_train, Y_train, batch_size = epoch_batch_size, epochs = 1, shuffle = True)
+            self.model.fit(X_train, Y_train, batch_size = epoch_batch_size, epochs = 1, shuffle = True, verbose = 0)
 
         end_time = time()
 

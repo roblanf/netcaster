@@ -47,10 +47,20 @@ loss = 'categorical_crossentropy'
 
 
 
-lineage = Lineage(5, input_shape, output_config, loss, X_train, Y_train, X_val, Y_val,trainsize = 20000, valsize = 2000)
-lineage.initialise()
-lineage.evolve(20)
+# establish a lineage with training and validation data
+lineage = Lineage(input_shape, output_config, loss, X_train, Y_train, X_val, Y_val, trainsize = 20000, valsize = 2000)
 
+# start with a population of 10 random networks
+lineage.initialise(5)
+
+# now we'll evolve it with 2 parents:
+	# 5 generations of population size 10
+	# 5 generations of population size 20
+lineage.evolve([10]*5 + [20]*5, num_parents = 2)
+
+# then for another 50 generations of 50 individuals, with 4 parents each
+# we'll also kill off the least-fit 20 individuals in each generation
+lineage.evolve([50]*50, num_parents = 4, kill = 20)
 
 
 lineage = Lineage(50, input_shape, output_config, loss, X_train, Y_train, X_val, Y_val,trainsize = 20000, valsize = 2000)
