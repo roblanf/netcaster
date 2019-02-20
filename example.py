@@ -2,7 +2,9 @@
 from keras.utils.np_utils import to_categorical
 from keras.layers import Dense
 import pandas as pd
-import lineage
+from lineage import Lineage
+import numpy as np
+
 
 # load the data
 train = pd.read_csv('train.csv')
@@ -31,18 +33,27 @@ X_train = (X_train - mean_px)/(std_px)
 Y_train = to_categorical(Y_train)
 
 
+# we split off a validation set for assessing fitness
+X_val = X_train[1:10000]
+Y_val = Y_train[1:10000]
+
+X_train = X_train[10001:]
+Y_train = Y_train[10001:]
 
 # We need a few things to establish a population
-output_config = Dense(units = 10, activation = 'softmax').config()
+output_config = Dense(units = 10, activation = 'softmax').get_config()
 input_shape = (32, 32, 1)
 loss = 'categorical_crossentropy'
-N = 30
 
-lineage = Lineage(N, output_config, X_train, Y_train, X_val, Y_val)
 
-# evolve the lineage for 5 generations
+
+lineage = Lineage(5, input_shape, output_config, loss, X_train, Y_train, X_val, Y_val,trainsize = 20000, valsize = 2000)
 lineage.initialise()
-lineage.evolve(5)
+lineage.evolve(20)
 
+
+
+lineage = Lineage(50, input_shape, output_config, loss, X_train, Y_train, X_val, Y_val,trainsize = 20000, valsize = 2000)
+lineage.initialise(founders = "genotypes3.pkl")
 
 # another example, in which we load some genotypes from a previous run to initalise the population

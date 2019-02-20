@@ -1,12 +1,13 @@
-import optimisers
+import numpy as np
 
 def mutate_optimiser(optimiser, learning_rate, size, limits, mutrate):
     # mutate the optimiser. if the optimiser changes, we set the learning rate
 
-    if np.random.uniform(0, 1) < mutrate:
-        return(random_optimiser)
+    if np.random.uniform(0, 1) < 0: # Turn this back on if you want to explore other optimisers than Adam
+        # get a new optimiser and get the default learning rate for that.
+        optimiser, learning_rate = optimisers.random_optimiser()
 
-    else: # we didn't change the optimiser, so try mutating the learning rate
+    if np.random.uniform(0, 1) < mutrate:
         learning_rate = mutate_product(learning_rate, size, [0, 1], mutrate)
 
     return(optimiser, learning_rate)
@@ -29,10 +30,12 @@ def mutate_batchsize(batchsize, mutrate, min_size = 8, max_size = 8192):
 
 def mutate_int_fixed(value, size, limits, mutrate):
     # mutate an integer up or down by a value up to size, within limits
+    change = 0
 
     if np.random.uniform(0, 1) < mutrate:
         change = list(range(-1*size, size + 1))
-        change.remove(0) # because we've already agreed well mutate
+        change.remove(0) # because we've already agreed we;ll mutate
+        change = np.random.choice(change)
 
     value = value + change
 
@@ -41,8 +44,8 @@ def mutate_int_fixed(value, size, limits, mutrate):
 
     return(value)
 
-def mutate_int(self, value, size, limits, mutrate):
-    # change an int by at least 1..., up to size %
+def mutate_int(value, size, limits, mutrate):
+    # change an int by at least 1..., up to proportion size
 
     if np.random.uniform(0, 1) < mutrate:
 
@@ -68,7 +71,7 @@ def mutate_int(self, value, size, limits, mutrate):
     return value
 
 
-def mutate_addition(self, value, size, limits, mutrate):
+def mutate_addition(value, size, limits, mutrate):
     # mutate a float of value, by amount size, within limits
 
     if np.random.uniform(0, 1) < mutrate:
@@ -85,7 +88,7 @@ def mutate_addition(self, value, size, limits, mutrate):
 
     return value
 
-def mutate_product(self, value, size, limits, mutrate):
+def mutate_product(value, size, limits, mutrate):
     # mutate a float of value, by amount size, within limits
 
     if np.random.uniform(0, 1) < mutrate:
