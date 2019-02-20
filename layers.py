@@ -4,7 +4,7 @@ from keras.layers import MaxPooling2D
 from keras.layers import Dense
 import numpy as np
 
-base_mr = 0.1 # a simple global default for initalising all mutation rates
+base_mr = 0.2 # a simple global default for initalising all mutation rates
 
 def add_conv_layer(layer, input_shape):
 
@@ -23,8 +23,6 @@ def add_conv_layer(layer, input_shape):
                            input_shape = input_shape)
 
     return(new_layer)
-
-
 
 def random_conv_layer():
 
