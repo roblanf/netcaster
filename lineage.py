@@ -148,10 +148,12 @@ class Lineage(object):
             try:
                 parent_index = max(np.where(cs == True)[0]) + 1
             except:
-                parent_index = len(parent_pop) # if anything goes wrong, choose the fittest
+                parent_index = len(parent_pop) - 1 # if anything goes wrong, choose the fittest
 
             # parent is a tuple of (fitness, training_time, genotype)
             parent = parent_pop[parent_index]
+
+            print("parent:", parent_index, "f:", parent[0])
 
             parents.append(parent[2])
             
@@ -165,11 +167,12 @@ class Lineage(object):
             wr = csv.writer(myfile)
             wr.writerow(fitness)
 
+
         with open('pop%d.pkl' %(generation), 'wb') as myfile:
             pickle.dump(pop, myfile)
 
 
-    def evolve(self, generations, num_parents, keep = 0, kill = 0, selection = "rank2"):
+    def evolve(self, generations, num_parents = 2, keep = 0, kill = 0, selection = "rank2"):
         # evolve a population
         # generations is a list of population sizes
 

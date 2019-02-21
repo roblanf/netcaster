@@ -22,6 +22,8 @@ def add_conv_layer(layer, input_shape):
                            activation = "relu",
                            input_shape = input_shape)
 
+    new_layer = new_layer.get_config()
+
     return(new_layer)
 
 def random_conv_layer():
@@ -65,6 +67,8 @@ def add_pool_layer(layer, input_shape):
                                  padding = layer["padding"],
                                  input_shape = input_shape)
 
+    new_layer = new_layer.get_config()
+
     return(new_layer)
 
 
@@ -89,6 +93,8 @@ def add_full_layer(layer, input_shape):
         new_layer = Dense(units = layer["units"],
                           activation = "relu",
                           input_shape = input_shape)
+
+    new_layer = new_layer.get_config()
 
     return(new_layer)
 
