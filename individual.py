@@ -32,17 +32,17 @@ class Individual(object):
         else:
             self.offspring_genotype()
 
-        print("\nOffspring genotype")
+        #print("\nOffspring genotype")
         self.print_genotype()
 
     def random_genotype(self, mutrate = 0.1):
         # generate a random CNN genotype with sensible defaults
 
         # number of conv and pooling layers at the start
-        num_cp_layers = np.random.randint(2, 5)
+        num_cp_layers = np.random.randint(2, 8)
 
         # number of fully connected layers
-        num_d_layers = np.random.randint(1, 2)
+        num_d_layers = np.random.randint(1, 3)
 
         # genotype hyperparameters
         # to get a random optimiser:
@@ -106,6 +106,7 @@ class Individual(object):
                            loss = self.loss, 
                            metrics = ['accuracy'])
         
+        keras.utils.print_summary(self.model)
 
     def train_network(self, X_train, Y_train):
         # train network based on genotype
@@ -206,12 +207,15 @@ class Individual(object):
             input_shape = False
         if layer_type == "conv":
             new_layer = add_conv_layer(layer, input_shape)
+            new_layer = Conv2D.from_config(new_layer)
         if layer_type == "pool":
             new_layer = add_pool_layer(layer, input_shape)
+            new_layer = MaxPooling2D.from_config(new_layer)
         if layer_type == "full":
             if prev_type in ["conv", "pool", 0]:
                 self.model.add(Flatten())
             new_layer = add_full_layer(layer, input_shape)
+            new_layer = Dense.from_config(new_layer)
 
         self.model.add(new_layer)
 
