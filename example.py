@@ -46,6 +46,12 @@ input_shape = (32, 32, 1)
 loss = 'categorical_crossentropy'
 
 
+lineage = Lineage(input_shape, output_config, loss, X_train, Y_train, X_val, Y_val, trainsize = 31999, valsize = 5000)
+lineage.initialise(20)
+lineage.evolve([20]*50, num_parents = 2, selection = "weighted")
+lineage.evolve([50]*50, num_parents = 2, selection = "weighted")
+
+
 
 # establish a lineage with training and validation data
 lineage = Lineage(input_shape, output_config, loss, X_train, Y_train, X_val, Y_val, trainsize = 20000, valsize = 2000)
@@ -61,13 +67,10 @@ lineage.evolve([10]*5 + [20]*5, num_parents = 2)
 # then for another 50 generations of 40 individuals, with 4 parents each
 # we'll also kill off the least-fit 20 individuals in each generation
 # first we have to increase the population size to 40, to give us enough to kill 20
-lineage.evolve([40]*1, num_parents = 4)
+lineage.evolve([40]*1, num_parents = 2)
 
 # now we can do our next 50 generations
-lineage.evolve([40]*50, num_parents = 4, kill = 20)
+lineage.evolve([40]*50, num_parents = 2, kill = 20)
 
 
-lineage = Lineage(50, input_shape, output_config, loss, X_train, Y_train, X_val, Y_val,trainsize = 20000, valsize = 2000)
-lineage.initialise(founders = "genotypes3.pkl")
 
-# another example, in which we load some genotypes from a previous run to initalise the population
