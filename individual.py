@@ -308,6 +308,7 @@ class Individual(object):
         
         # get the conv/pool layers from the parent network
         cp_layers_parent = [layer for layer in current_parent["network"] if layer["type"] in ["conv", "pool"]]
+        cp_layers_parent = cp_layers_parent.copy()
 
         # start by assuming that the offspring will look like this parent
         num_cp_layers = len(cp_layers_parent)
@@ -344,11 +345,11 @@ class Individual(object):
                     # 50/50 split: choose a layer from the parent (with mutation)
                     # vs. add a random cp layer
                     if np.random.uniform(0, 1) < 0.5:
-                        offspring_cp_layers.append(mutate_layer(np.random.choice(cp_layers_parent)))
+                        offspring_cp_layers.append(mutate_layer(np.random.choice(cp_layers_parent.copy())))
                     else:
                         offspring_cp_layers.append(random_cp_layer())
             else:
-                offspring_cp_layers.append(cp_layers_parent[p_counter])
+                offspring_cp_layers.append(cp_layers_parent[p_counter].copy())
                 p_counter += 1
 
         # rinse and repeat for the full layers
@@ -356,6 +357,7 @@ class Individual(object):
         
         # get the dense layers from the parent network
         d_layers_parent = [layer for layer in current_parent["network"] if layer["type"] in ["full"]]
+        d_layers_parent = d_layers_parent.copy()
 
         # start by assuming that the offspring will look like this parent
         num_d_layers = len(d_layers_parent)
@@ -394,18 +396,18 @@ class Individual(object):
                     # 50/50 split: choose a layer from the parent (with mutation)
                     # vs. add a random layer
                     if np.random.uniform(0, 1) < 0.5:
-                        offspring_d_layers.append(mutate_layer(np.random.choice(d_layers_parent)))
+                        offspring_d_layers.append(mutate_layer(np.random.choice(d_layers_parent.copy())))
                     else:
                         offspring_d_layers.append(random_full_layer())
             else:
-                offspring_d_layers.append(d_layers_parent[p_counter])
+                offspring_d_layers.append(d_layers_parent[p_counter].copy())
                 p_counter += 1
 
         # now we'll have the option to mutate all the layers
-        pre_mutation = offspring_cp_layers + offspring_d_layers
+        pre_mutation = offspring_cp_layers.copy() + offspring_d_layers.copy()
         post_mutation = []
         for layer in pre_mutation:
-            post_mutation.append(mutate_layer(layer))
+            post_mutation.append(mutate_layer(layer.copy()))
 
 
         return(post_mutation)

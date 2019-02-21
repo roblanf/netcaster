@@ -181,8 +181,9 @@ class Lineage(object):
             print("Generation: ", len(self.lineage)) 
 
             # start with the most recent lineage
-            pop = self.lineage[-1]
+            pop = self.lineage[-1].copy()
             fitness = [x[0] for x in pop]
+            fitness_orig = fitness.copy()
 
             # subsample the validation and training data in each generation
             X_val_sample, Y_val_sample = self.subsample_val()
@@ -192,13 +193,18 @@ class Lineage(object):
 
             offspring = []
 
+            print("population size:", len(pop))
+
             # keep the fittest keep individuals in the population
             for i in range(len(pop)-keep, len(pop)):
                 offspring.append(pop[i])
 
             # kill the worst ones
             for i in range(kill):
+                print("killing index:", i)
                 del pop[i]
+
+            print("population size:", len(pop))
 
             # breed the rest of offspring from what's left of pop
             while len(offspring) < g:
@@ -215,7 +221,7 @@ class Lineage(object):
             self.lineage.append(offspring)
 
             print("Fitness of previous generation")
-            print(fitness)
+            print(fitness_orig)
 
             fitness = [x[0] for x in offspring]
             print("Fitness of offspring")
