@@ -8,3 +8,5 @@ output.txt
 fitness.txt
 
 fashion-mnist_train.csv
+
+lineage.tsv
