@@ -6,10 +6,17 @@ from lineage import Lineage
 import numpy as np
 from individual import Individual
 import pickle
+import zipfile
 
 
 # load the data
 train = pd.read_csv('mnist_train.csv')
+
+# for fashion mnist
+#with zipfile.ZipFile("fashion-mnist_train.csv.zip","r") as zip_ref:
+#    zip_ref.extractall()
+
+#train = pd.read_csv('fashion-mnist_train.csv')
 
 Y_train = train[['label']]
 X_train = train.drop(train.columns[[0]], axis=1)
