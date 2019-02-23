@@ -10,11 +10,11 @@ import csv
 import numpy as np
 from pprint import pprint
 import pickle
-
+import os
 
 class Lineage(object):
     def __init__(self, input_shape, out_config, loss_function, X_train, Y_train, X_val, Y_val, 
-                 trainsize = None, valsize = None, overlapping = False, name = 'lineage'):
+                 trainsize = None, valsize = None, overlapping = False, outputdir = '', name = 'lineage'):
         """An lineage of individuals that can evolve"""
 
         self.input_shape = input_shape
@@ -28,25 +28,24 @@ class Lineage(object):
         self.valsize = valsize          # test  on a subset of the data. None = use all data
         self.overlapping = overlapping  # True or False. True = overlapping generation. 
         self.lineage = []               # a list to contain the lists of genotype / fitness tuples that represent each population
-        self.name = name                # useful for saving output
+        self.outputdir = outputdir    # filepath for saving output
+        self.name = name                # name for this lineage, pertains to output files
 
     def initialise(self, founders = None, recalculate_fitness = False):
-        # founders is a file path to a population.pkl file - a pkl file containing a list of genotypes
+        # founders is a file path to a lineage.pkl file - a pkl file containing a list of lists of genotypes
         if type(founders) == str:
-            # we have an input file of a population.pkl file
+
+            # we have an input file of a lineage.pkl file
+            # load it and set it to this lineage .lineage
+            self.load_lineage(founders)
+
             if recalculate_fitness:
                 # useful if you have different train / test data
-                pop = self.founder_population(founders)
-            else:
-                pop = self.load_genotypes(founders)
+                pop = self.recalculate_last_gen()
+
         else:
             # founders is an int of a population size
-            pop = self.random_population(founders)
-
-        # sort on fitness
-        pop.sort(key=lambda tup: tup[0])
-
-        self.lineage.append(pop) # our first generation
+            self.random_population(founders)
 
     def clean_up(self):
         # clean up a keras memory leak following https://stackoverflow.com/questions/48796619/why-is-tf-keras-inference-way-slower-than-numpy-operations
@@ -65,17 +64,21 @@ class Lineage(object):
         for i in range(N):
             random_ind = Individual(self.input_shape, self.out_config, self.loss)
             random_ind.get_fitness(X_train_sample, Y_train_sample, X_val_sample, Y_val_sample)
-            pop.append((random_ind.fitness, random_ind.training_time, random_ind.genotype))
+            pop.append((random_ind.fitness, random_ind.training_time, random_ind.genotype, random_ind.test_time))
 
             self.clean_up()
             del random_ind
 
+        pop.sort(key=lambda tup: tup[0])
+        self.lineage.append(pop)
+
         return(pop)
 
 
-    def founder_population(self, founders):
+    def recalculate_last_gen(self):
         # make a population from a list of one or more genotypes
-        pop = self.load_genotypes(founders)
+        pop = self.lineage[-1]
+        self.lineage.remove(pop)
         genotypes = [x[2] for x in pop]
 
         X_val_sample, Y_val_sample = self.subsample_val()
@@ -85,19 +88,17 @@ class Lineage(object):
         for g in genotypes:
             ind = Individual(self.input_shape, self.out_config, self.loss, genotype = g)
             ind.get_fitness(X_train_sample, Y_train_sample, X_val_sample, Y_val_sample)
-            pop.append((ind.fitness, ind.training_time, ind.genotype))
+            pop.append((ind.fitness, ind.training_time, ind.genotype, ind.test_time))
 
             self.clean_up()
             del ind
 
-        return(pop)
+        pop.sort(key=lambda tup: tup[0])
+        self.lineage.append(pop)
 
-    def load_genotypes(self, founder_pop):
-        with open(founder_pop, 'rb') as myfile:
-            pop = pickle.load(myfile)
-
-        return(pop)
-
+    def load_lineage(self, lineagepkl):
+        with open(lineagepkl, 'rb') as myfile:
+            self.lineage = pickle.load(myfile)
 
     def subsample_val(self):
         # use a small random sample of the test data in each generation
@@ -166,11 +167,12 @@ class Lineage(object):
         # write the fitness, training time, etc.
         pop = self.lineage[-1].copy()
         generation = len(self.lineage)
-        with open('lineage.csv', 'a') as csvout:
-            for p in pop:
-                csvout.write("%d,%f,%f,%f,%s" %(generation, p[0],p[1],p[3],p[2]))
 
-        with open('%s.pkl' %(self.name), 'wb') as pklout:
+        with open(os.path.join(self.outputdir, '%s.tsv' %(self.name)), 'a') as csvout:
+            for p in pop:
+                csvout.write("%d\t%f\t%f\t%f\t%s\n" %(generation, p[0],p[1],p[3],p[2]))
+
+        with open(os.path.join(self.outputdir, '%s.pkl') %(self.name), 'wb') as pklout:
             pickle.dump(self.lineage, pklout)
 
     def evolve(self, generations, num_parents = 2, keep = 0, kill = 0, selection = "rank2"):
