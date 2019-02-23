@@ -136,7 +136,7 @@ class Individual(object):
 
         end_time = time()
 
-        self.test_time = start_time - end_time
+        self.test_time = end_time - start_time
 
         self.loss = evals[0]
         self.fitness = evals[1] #fitness is just the test accuracy
