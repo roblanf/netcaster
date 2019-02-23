@@ -6,3 +6,5 @@ output.txt
 *.pyc
 
 fitness.txt
+
+fashion-mnist_train.csv
