@@ -14,7 +14,7 @@ import pickle
 
 class Lineage(object):
     def __init__(self, input_shape, out_config, loss_function, X_train, Y_train, X_val, Y_val, 
-                 trainsize = None, valsize = None, overlapping = False):
+                 trainsize = None, valsize = None, overlapping = False, name = 'lineage'):
         """An lineage of individuals that can evolve"""
 
         self.input_shape = input_shape
@@ -28,6 +28,7 @@ class Lineage(object):
         self.valsize = valsize          # test  on a subset of the data. None = use all data
         self.overlapping = overlapping  # True or False. True = overlapping generation. 
         self.lineage = []               # a list to contain the lists of genotype / fitness tuples that represent each population
+        self.name = name                # useful for saving output
 
     def initialise(self, founders = None, recalculate_fitness = False):
         # founders is a file path to a population.pkl file - a pkl file containing a list of genotypes
@@ -159,18 +160,18 @@ class Lineage(object):
             
         return(parents)
 
-    def write_output(self, generation, pop):
+    def save_lineage(self):
         # record fitness and genotypes
-        fitness = [x[0] for x in pop]
-        fitness.insert(0,generation)
-        with open('fitness.txt', 'a') as myfile:
-            wr = csv.writer(myfile)
-            wr.writerow(fitness)
 
+        # write the fitness, training time, etc.
+        pop = self.lineage[-1].copy()
+        generation = len(self.lineage)
+        with open('lineage.csv', 'a') as csvout:
+            for p in pop:
+                csvout.write("%d,%f,%f,%f,%s" %(generation, p[0],p[1],p[3],p[2]))
 
-        with open('pop%d.pkl' %(generation), 'wb') as myfile:
-            pickle.dump(pop, myfile)
-
+        with open('%s.pkl' %(self.name), 'wb') as pklout:
+            pickle.dump(self.lineage, pklout)
 
     def evolve(self, generations, num_parents = 2, keep = 0, kill = 0, selection = "rank2"):
         # evolve a population
@@ -189,7 +190,8 @@ class Lineage(object):
             X_val_sample, Y_val_sample = self.subsample_val()
             X_train_sample, Y_train_sample = self.subsample_train()
 
-            self.write_output(len(self.lineage), pop)
+            # only do this now, in case of issues in the prior steps
+            self.save_lineage()
 
             offspring = []
 
@@ -213,7 +215,7 @@ class Lineage(object):
                 parents = self.choose_n_parents(pop, num_parents, selection)
                 f1 = Individual(self.input_shape, self.out_config, self.loss, parents=parents)
                 f1.get_fitness(X_train_sample, Y_train_sample, X_val_sample, Y_val_sample)
-                offspring.append((f1.fitness, f1.training_time, f1.genotype))
+                offspring.append((f1.fitness, f1.training_time, f1.genotype, f1.test_time))
                 self.clean_up()
                 del f1
 
