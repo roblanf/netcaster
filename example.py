@@ -9,22 +9,17 @@ import pickle
 
 
 # load the data
-train = pd.read_csv('train.csv')
-test = pd.read_csv('test.csv')
+train = pd.read_csv('mnist_train.csv')
 
 Y_train = train[['label']]
 X_train = train.drop(train.columns[[0]], axis=1)
-X_test = test
 
-#Reshape the training and test set
+#Reshape the training set
 X_train = np.array(X_train)
-X_test = np.array(X_test)
 X_train = X_train.reshape(X_train.shape[0], 28, 28, 1)
-X_test = X_test.reshape(X_test.shape[0], 28, 28, 1)
 
 #Padding the images by 2 pixels since in the paper input images were 32x32
 X_train = np.pad(X_train, ((0,0),(2,2),(2,2),(0,0)), 'constant')
-X_test = np.pad(X_test, ((0,0),(2,2),(2,2),(0,0)), 'constant')
 
 #Standardization
 mean_px = X_train.mean().astype(np.float32)
@@ -34,9 +29,7 @@ X_train = (X_train - mean_px)/(std_px)
 #One-hot encoding the labels
 Y_train = to_categorical(Y_train)
 
-
 # Here's where we start doing things for the evolutionary algorithm
-
 # First we split off a validation set for assessing fitness
 # we'll use the validation set to calculate network fitness
 
@@ -60,6 +53,14 @@ loss = 'categorical_crossentropy'
 
 
 
+# test code, delete
+hillclimb = Lineage(input_shape, output_config, loss, X_train, Y_train, X_val, Y_val, trainsize = 3199, valsize = 500)
+hillclimb.initialise(2)
+# these settings keep the best individual around, and just breed one offspring from it in each generation
+hillclimb.evolve([2]*4, num_parents = 1, kill = 1, keep=1)
+
+
+
 # Now we're ready to set up a population and let it evolve. Here are some examples
 
 # 1. A simple way of doing standard evolution 
@@ -72,7 +73,7 @@ lineage.evolve([20]*50) # 50 generations of evolution with 20 individuals in eac
 hillclimb = Lineage(input_shape, output_config, loss, X_train, Y_train, X_val, Y_val, trainsize = 31999, valsize = 5000)
 hillclimb.initialise(5)
 # these settings keep the best individual around, and just breed one offspring from it in each generation
-hillclimb.evolve([2]*100, num_parents = 1, kill = 1, keep=1) 
+hillclimb.evolve([2]*10, num_parents = 1, kill = 1, keep=1)
 
 
 
