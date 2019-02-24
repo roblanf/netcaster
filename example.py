@@ -10,13 +10,13 @@ import zipfile
 
 
 # load the data
-train = pd.read_csv('mnist_train.csv')
+#train = pd.read_csv('mnist_train.csv')
 
 # for fashion mnist
-#with zipfile.ZipFile("fashion-mnist_train.csv.zip","r") as zip_ref:
-#    zip_ref.extractall()
+with zipfile.ZipFile("fashion-mnist_train.csv.zip","r") as zip_ref:
+    zip_ref.extractall()
 
-#train = pd.read_csv('fashion-mnist_train.csv')
+train = pd.read_csv('fashion-mnist_train.csv')
 
 Y_train = train[['label']]
 X_train = train.drop(train.columns[[0]], axis=1)
@@ -71,9 +71,9 @@ hillclimb.evolve([2]*4, num_parents = 1, kill = 1, keep=1)
 # Now we're ready to set up a population and let it evolve. Here are some examples
 
 # 1. A simple way of doing standard evolution 
-lineage = Lineage(input_shape, output_config, loss, X_train, Y_train, X_val, Y_val, trainsize = 31999, valsize = 5000)
-lineage.initialise(20) # start with 20 random genotypes
-lineage.evolve([20]*50) # 50 generations of evolution with 20 individuals in each
+lineage = Lineage(input_shape, output_config, loss, X_train, Y_train, X_val, Y_val, trainsize = 49999, valsize = 10000)
+lineage.initialise(40) # start with 20 random genotypes
+lineage.evolve([40]*100) # 50 generations of evolution with 20 individuals in each
 
 
 # 2. A simple hill climbing algorithm
