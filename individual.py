@@ -25,6 +25,7 @@ class Individual(object):
         self.genotype = genotype            # a genotype, which can be passed in
         self.fitness = None
         self.training_time = np.Inf         # in case there's an error during fitting
+        self.test_time = np.Inf
 
     def make_genotype(self):
         if self.parents==None:
