@@ -349,6 +349,9 @@ class Individual(object):
                         offspring_cp_layers.append(mutate_layer(np.random.choice(cp_layers_parent.copy())))
                     else:
                         offspring_cp_layers.append(random_cp_layer())
+                else:
+                    offspring_cp_layers.append(random_cp_layer())
+
             else:
                 offspring_cp_layers.append(cp_layers_parent[p_counter].copy())
                 p_counter += 1
@@ -373,7 +376,7 @@ class Individual(object):
                 all_d_nums = list(range(num_d_layers))
                 new_d_nums = random.sample(all_d_nums, layer_change)
 
-            print("changing full layers by: ", layer_change)
+            print("changing d layers by: ", layer_change)
 
             if layer_change < 0:
                 # we need to lose layer_change layers at random
@@ -383,7 +386,6 @@ class Individual(object):
                         del d_layers_parent[np.random.randint(0, len(d_layers_parent))]
                 except:
                     pass # we've run out of parent layers to delete, so don't worry
-
 
         # now we'll make an offspring genotype
         offspring_d_layers = []
@@ -400,6 +402,8 @@ class Individual(object):
                         offspring_d_layers.append(mutate_layer(np.random.choice(d_layers_parent.copy())))
                     else:
                         offspring_d_layers.append(random_full_layer())
+                else:
+                    offspring_d_layers.append(random_full_layer())
             else:
                 offspring_d_layers.append(d_layers_parent[p_counter].copy())
                 p_counter += 1
