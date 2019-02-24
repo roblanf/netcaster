@@ -60,10 +60,10 @@ loss = 'categorical_crossentropy'
 
 
 # test mcmc code, delete
-mcmc = Lineage(input_shape, output_config, loss, X_train, Y_train, X_val, Y_val, trainsize = 10000, valsize = 5000)
-mcmc.initialise(10)
-# these settings keep the best individual around, and just breed one offspring from it in each generation
-mcmc.mcmc(100)
+mcmc = Lineage(input_shape, output_config, loss, X_train, Y_train, X_val, Y_val, trainsize = 30000, valsize = 9000)
+mcmc.initialise(50)
+mcmc.evolve([20]*10, keep=1)
+mcmc.hillclimb(500)
 
 
 
