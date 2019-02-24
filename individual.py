@@ -16,7 +16,7 @@ from mutation import *
 from optimisers import *
 
 class Individual(object):
-    def __init__(self, input_shape, out_config, loss, parents=None, genotype = None):
+    def __init__(self, input_shape, out_config, loss, parents=None, genotype = None, mcmc = False):
         """An individual network"""
         self.parents = parents              # a list of P parents genotypes, from which we can generate offspring
         self.input_shape = input_shape      # shape of input data, from np.shape(X_train), where dim 0 is N
@@ -26,15 +26,13 @@ class Individual(object):
         self.fitness = None
         self.training_time = np.Inf         # in case there's an error during fitting
         self.test_time = np.Inf
+        self.mcmc = mcmc                    # a flag because we evolve differently for hill climbing and mcmc
 
     def make_genotype(self):
         if self.parents==None:
             self.random_genotype()
         else:
             self.offspring_genotype()
-
-        #print("\nOffspring genotype")
-        self.print_genotype()
 
     def random_genotype(self, mutrate = 0.1):
         # generate a random CNN genotype with sensible defaults
@@ -57,7 +55,7 @@ class Individual(object):
                     "optimiser": opt[0],
                     "learning_rate": opt[1],
                     "learning_rate_mutrate": mutrate, # mutation size for learning rate
-                    "slip": mutrate, # chance of adding new layers to network
+                    "slip": 0.3, # chance of adding new layers to network
                     "epoch_mutrate": mutrate, # mutation rate applied to # epochs
                     "batchsize_mutrate": mutrate # mutation rate for batch size
                     }
@@ -107,8 +105,6 @@ class Individual(object):
                            loss = self.loss, 
                            metrics = ['accuracy'])
         
-        keras.utils.print_summary(self.model)
-
     def train_network(self, X_train, Y_train):
         # train network based on genotype
 
@@ -133,7 +129,7 @@ class Individual(object):
 
         start_time = time()
 
-        evals = self.model.evaluate(X_val, Y_val)
+        evals = self.model.evaluate(X_val, Y_val, verbose = 0)
 
         end_time = time()
 
@@ -183,7 +179,6 @@ class Individual(object):
                 self.fitness = 0
 
 
-        print("fitness: ", self.fitness)
         return(self.fitness)
 
 
@@ -257,31 +252,42 @@ class Individual(object):
         # mutation rate
         current_parent = np.random.choice(self.parents)
         mutrate = current_parent["params"]["mutation"] # start with the mutation rate from the current parent
-        mutrate = mutate_product(current_parent["params"]["mutation"], size = 1.05, limits = [0, 1], mutrate = mutrate)
+        if self.mcmc==False:
+            mutrate = mutate_product(mutrate, size = 1.05, limits = [0, 1], mutrate = mutrate)
 
         # recombination rate
-        current_parent = self.recombination(current_parent)
-        recomb = mutate_product(current_parent["params"]["recomb"], size = 1.05, limits = [0, 1], mutrate = mutrate)
+        recomb = current_parent["params"]["recomb"]
+        if self.mcmc==False:
+            current_parent = self.recombination(current_parent)
+            recomb = mutate_product(recomb, size = 1.05, limits = [0, 1], mutrate = mutrate)
 
         # optimiser and learning rate
         current_parent = self.recombination(current_parent)
         optimiser, learning_rate = mutate_optimiser(current_parent["params"]["optimiser"], current_parent["params"]["learning_rate"], size = 1.05, limits = [0, 1], mutrate = current_parent["params"]["learning_rate_mutrate"])
 
         # learning_rate_mutrate
-        current_parent = self.recombination(current_parent)
-        learning_rate_mutrate =  mutate_product(current_parent["params"]["learning_rate_mutrate"], size = 1.05, limits = [0, 1], mutrate = mutrate)
+        learning_rate_mutrate = current_parent["params"]["learning_rate_mutrate"]
+        if self.mcmc==False:
+            current_parent = self.recombination(current_parent)
+            learning_rate_mutrate =  mutate_product(learning_rate_mutrate, size = 1.05, limits = [0, 1], mutrate = mutrate)
 
         # slippage rate
-        current_parent = self.recombination(current_parent)
-        slip = mutate_product(current_parent["params"]["slip"], size = 1.05, limits = [0, 1], mutrate = mutrate)
+        slip = current_parent["params"]["slip"]
+        if self.mcmc==False:
+            current_parent = self.recombination(current_parent)
+            slip = mutate_product(slip, size = 1.05, limits = [0, 1], mutrate = mutrate)
 
         # epoch mutation rate
-        current_parent = self.recombination(current_parent)
-        epoch_mutrate = mutate_product(current_parent["params"]["epoch_mutrate"], size = 1.05, limits = [0, 1], mutrate = mutrate)
+        epoch_mutrate = current_parent["params"]["epoch_mutrate"]
+        if self.mcmc==False:
+            current_parent = self.recombination(current_parent)
+            epoch_mutrate = mutate_product(epoch_mutrate, size = 1.05, limits = [0, 1], mutrate = mutrate)
 
         # epoch mutation rate
-        current_parent = self.recombination(current_parent)
-        batchsize_mutrate = mutate_product(current_parent["params"]["batchsize_mutrate"], size = 1.05, limits = [0, 1], mutrate = mutrate)
+        batchsize_mutrate = current_parent["params"]["batchsize_mutrate"]
+        if self.mcmc==False:
+            current_parent = self.recombination(current_parent)
+            batchsize_mutrate = mutate_product(batchsize_mutrate, size = 1.05, limits = [0, 1], mutrate = mutrate)
 
         params =   {"mutation": mutrate,
                     "recomb": recomb,
@@ -298,12 +304,18 @@ class Individual(object):
 
     def get_offspring_network(self):
 
-        mutrate = self.genotype["params"]["mutation"]
+
         recomb = self.genotype["params"]["recomb"]
         parents = self.parents.copy()
-        slip = self.genotype["params"]["slip"]
 
-        # we'll start with teh conv and pool layers, then rinse and repeat for the dense layers
+        if self.mcmc==False:            
+            mutrate = self.genotype["params"]["mutation"]
+            slip = self.genotype["params"]["slip"]
+        else:
+            mutrate = 0.1
+            slip = 0.5
+
+        # we'll start with the conv and pool layers, then rinse and repeat for the dense layers
         # choose a parent
         current_parent = np.random.choice(parents)
         
@@ -324,7 +336,6 @@ class Individual(object):
                 all_cp_nums = list(range(num_cp_layers))
                 new_cp_nums = random.sample(all_cp_nums, layer_change)
 
-            print("changing cp layers by: ", layer_change)
 
             if layer_change < 0:
                 # we need to lose layer_change layers at random
@@ -375,8 +386,6 @@ class Individual(object):
             if layer_change > 0:
                 all_d_nums = list(range(num_d_layers))
                 new_d_nums = random.sample(all_d_nums, layer_change)
-
-            print("changing d layers by: ", layer_change)
 
             if layer_change < 0:
                 # we need to lose layer_change layers at random

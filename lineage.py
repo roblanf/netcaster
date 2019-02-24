@@ -1,4 +1,4 @@
-from individual import Individual
+from individual import *
 
 # these are to clear sessions to deal with this memory leak: https://github.com/keras-team/keras/issues/2102
 import keras.backend.tensorflow_backend
@@ -78,7 +78,6 @@ class Lineage(object):
     def recalculate_last_gen(self):
         # make a population from a list of one or more genotypes
         pop = self.lineage[-1]
-        self.lineage.remove(pop)
         genotypes = [x[2] for x in pop]
 
         X_val_sample, Y_val_sample = self.subsample_val()
@@ -94,7 +93,7 @@ class Lineage(object):
             del ind
 
         pop.sort(key=lambda tup: tup[0])
-        self.lineage.append(pop)
+        self.lineage[-1] = pop
 
     def load_lineage(self, lineagepkl):
         with open(lineagepkl, 'rb') as myfile:
@@ -155,8 +154,6 @@ class Lineage(object):
             # parent is a tuple of (fitness, training_time, genotype)
             parent = parent_pop[parent_index]
 
-            print("parent:", parent_index, "f:", parent[0])
-
             parents.append(parent[2])
             
         return(parents)
@@ -181,8 +178,6 @@ class Lineage(object):
 
         for g in generations:
 
-            print("Generation: ", len(self.lineage)) 
-
             # start with the most recent lineage
             pop = self.lineage[-1].copy()
             fitness = [x[0] for x in pop]
@@ -197,18 +192,13 @@ class Lineage(object):
 
             offspring = []
 
-            print("population size:", len(pop))
-
             # keep the fittest keep individuals in the population
             for i in range(len(pop)-keep, len(pop)):
                 offspring.append(pop[i])
 
             # kill the worst ones
             for i in range(kill):
-                print("killing index:", i)
                 del pop[i]
-
-            print("population size:", len(pop))
 
             # breed the rest of offspring from what's left of pop
             while len(offspring) < g:
@@ -224,11 +214,51 @@ class Lineage(object):
             offspring.sort(key=lambda tup: tup[0])
             self.lineage.append(offspring)
 
-            print("Fitness of previous generation")
-            print(fitness_orig)
-
             fitness = [x[0] for x in offspring]
-            print("Fitness of offspring")
-            print(fitness)
+
+    def hillclimb(self, iterations):
+        # evolve a lineage using hill climbing
+        
+        # get the best genotype
+        current_ind = self.lineage[-1][-1]
+        print("Starting genotype\n") 
+        print_genotype(current_ind[2])
+        print("Fitness: ", current_ind[0])
+
+        for i in range(iterations):
+            # each iteration involves accepting a new genotype
+            print("\n\niteration: ", i)
+
+            # subsample the validation and training data in each generation
+            X_val_sample, Y_val_sample = self.subsample_val()
+            X_train_sample, Y_train_sample = self.subsample_train()
+
+            # keep choosing a new individual until there's at least one mutation
+            proposal_genotype = current_ind[2]
+            current_ind_genotype = current_ind[2]
+            while(proposal_genotype == current_ind_genotype):
+                proposal = Individual(self.input_shape, self.out_config, self.loss, parents=[current_ind_genotype], mcmc=True)
+                proposal_genotype = proposal.genotype
+
+            proposal.get_fitness(X_train_sample, Y_train_sample, X_val_sample, Y_val_sample)
+
+            proposal.print_genotype()
+            print("Fitness: ", proposal.fitness)
+            print("Bestfit: ", current_ind[0])
+
+
+            acceptance_ratio = np.square(proposal.fitness) / np.square(current_ind[0])
+
+            if acceptance_ratio > 1:
+
+                current_ind = (proposal.fitness, proposal.training_time, proposal.genotype, proposal.test_time)
+
+                print("New best genotype")
+
+                self.lineage.append([current_ind])
+                self.save_lineage()
+
+            self.clean_up()
+            del proposal
 
 

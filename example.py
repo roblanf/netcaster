@@ -10,13 +10,13 @@ import zipfile
 
 
 # load the data
-#train = pd.read_csv('mnist_train.csv')
+train = pd.read_csv('mnist_train.csv')
 
 # for fashion mnist
-with zipfile.ZipFile("fashion-mnist_train.csv.zip","r") as zip_ref:
-    zip_ref.extractall()
+#with zipfile.ZipFile("fashion-mnist_train.csv.zip","r") as zip_ref:
+#    zip_ref.extractall()
 
-train = pd.read_csv('fashion-mnist_train.csv')
+#train = pd.read_csv('fashion-mnist_train.csv')
 
 Y_train = train[['label']]
 X_train = train.drop(train.columns[[0]], axis=1)
@@ -40,11 +40,11 @@ Y_train = to_categorical(Y_train)
 # First we split off a validation set for assessing fitness
 # we'll use the validation set to calculate network fitness
 
-X_val = X_train[1:10000]
-Y_val = Y_train[1:10000]
+X_val = X_train[0:10000]
+Y_val = Y_train[0:10000]
 
-X_train = X_train[10001:]
-Y_train = Y_train[10001:]
+X_train = X_train[10000:]
+Y_train = Y_train[10000:]
 
 
 # We need a few things to establish a population
@@ -57,6 +57,15 @@ input_shape = (32, 32, 1)
 
 # name of the loss function to use
 loss = 'categorical_crossentropy'
+
+
+# test mcmc code, delete
+mcmc = Lineage(input_shape, output_config, loss, X_train, Y_train, X_val, Y_val, trainsize = 10000, valsize = 5000)
+mcmc.initialise(10)
+# these settings keep the best individual around, and just breed one offspring from it in each generation
+mcmc.mcmc(100)
+
+
 
 
 
@@ -151,7 +160,7 @@ lenet5 = {'params': params, 'network': network, 'training': training}
 
 # now let's write this out as a population
 # a population is a list of tuples: (fitness, training time, genotype)
-pop = [(0.0, 0.0, lenet5)] 
+pop = [[(0.0, 0.0, lenet5, 0.0)]] 
 with open('lenet5.pkl', 'wb') as myfile:
     pickle.dump(pop, myfile)
 
