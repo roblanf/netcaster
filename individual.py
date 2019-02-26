@@ -172,13 +172,10 @@ class Individual(object):
                     self.fitness = 0
 
         else: # we get the genotype from the parents
-            try:    
                 self.make_genotype()
                 self.build_network()
                 self.train_network(X_train, Y_train)
                 self.test_network(X_val, Y_val)
-            except:
-                self.fitness = 0
 
         return(self.fitness)
 
@@ -286,8 +283,6 @@ class Individual(object):
 
     def get_offspring_network(self):
 
-        parents = self.parents.copy()
-
         if self.mcmc==False:            
             mutrate = self.genotype["params"]["mutation"]
             indel = self.genotype["params"]["indel"]
@@ -295,115 +290,62 @@ class Individual(object):
             mutrate = 0.1
             indel = 0.5
 
-        # we'll start with the conv and pool layers, then rinse and repeat for the dense layers
         # choose a parent
-        current_parent = np.random.choice(parents)
+        current_parent = np.random.choice(self.parents)
         
-        # get the conv/pool layers from the parent network
-        cp_layers_parent = [layer for layer in current_parent["network"] if layer["type"] in ["conv", "pool"]]
-        cp_layers_parent = cp_layers_parent.copy()
+        # get the total number of layers and the position of the first full layer from this parent
+        num_layers = len(current_parent["network"])
+        layer_types = [x["type"] for x in current_parent["network"]]
+        try:
+            first_full = layer_types.index("full")
+        except:
+            first_full = np.Inf
 
-        # start by assuming that the offspring will look like this parent
-        num_cp_layers = len(cp_layers_parent)
-
-        # here's where we see if we'll change the number of layers
-        # we change by at most 1
-        new_cp_nums = [] #placeholders for the index of new layers, if we get them
-        if np.random.uniform(0, 1) < indel:
-            layer_change = np.random.choice([-1, 1])
-            num_cp_layers = max(0, (num_cp_layers + layer_change))
-            if layer_change > 0:
-                all_cp_nums = list(range(num_cp_layers))
-                new_cp_nums = random.sample(all_cp_nums, layer_change)
-
-
-            if layer_change < 0:
-                # we need to lose layer_change layers at random
-                # from the parent genotype
-                try:
-                    for deletion in range(layer_change*-1):
-                        del cp_layers_parent[np.random.randint(0, len(cp_layers_parent))]
-                except:
-                    pass # we've run out of parent layers to delete, so don't worry
-
-        # now we'll make an offspring genotype
-        offspring_cp_layers = []
-        p_counter = 0 # count parent layers as we use them up
-        for i in range(num_cp_layers):
-
-            if i in new_cp_nums:
-                # this is a layer we added
-                if len(cp_layers_parent) > 0:
-                    # 50/50 split: choose a layer from the parent (with mutation)
-                    # vs. add a random cp layer
-                    if np.random.uniform(0, 1) < 0.5:
-                        offspring_cp_layers.append(np.random.choice(cp_layers_parent.copy()))
-                    else:
-                        offspring_cp_layers.append(random_cp_layer())
-                else:
-                    offspring_cp_layers.append(random_cp_layer())
-
-            else:
-                offspring_cp_layers.append(cp_layers_parent[p_counter].copy())
-                p_counter += 1
-
-        # rinse and repeat for the full layers
+        # now iterate over the layers, choosing layers with recombination 
+        # from the two parents
+        # but don't allow full layers until first_full
         current_parent = self.recombination(current_parent)
-        
-        # get the dense layers from the parent network
-        d_layers_parent = [layer for layer in current_parent["network"] if layer["type"] in ["full"]]
-        d_layers_parent = d_layers_parent.copy()
+        offspring = []
+        while len(offspring) < num_layers:
 
-        # start by assuming that the offspring will look like this parent
-        num_d_layers = len(d_layers_parent)
+            # keep trying the parents at random until you get one with this layer index
+            while len(current_parent["network"]) < len(offspring):
+                current_parent = self.recombination(current_parent)
 
-        # here's where we see if we'll change the number of layers
-        # we change by at most 2, with a bias towards adding layers
-        new_d_nums = [] #placeholders for the index of new layers, if we get them
-        if np.random.uniform(0, 1) < indel:
-            layer_change = np.random.choice([-1, 1])
-            num_d_layers = max(0, len(d_layers_parent) + layer_change)
-            if layer_change > 0:
-                all_d_nums = list(range(num_d_layers))
-                new_d_nums = random.sample(all_d_nums, layer_change)
+            # check that it's not a full layer if we can't have one yet
+            new_layer = current_parent["network"][len(offspring)]
 
-            if layer_change < 0:
-                # we need to lose layer_change layers at random
-                # from the parent genotype
-                try:
-                    for deletion in range(layer_change*-1):
-                        del d_layers_parent[np.random.randint(0, len(d_layers_parent))]
-                except:
-                    pass # we've run out of parent layers to delete, so don't worry
-
-        # now we'll make an offspring genotype
-        offspring_d_layers = []
-        p_counter = 0 # count parent layers as we use them up
-        for i in range(num_d_layers):
-
-            if i in new_d_nums:
-                # this is a layer we added
-                # if the parents have cp layers, we'll just randomly pick one with mutation
-                if len(d_layers_parent) > 0:
-                    # 50/50 split: choose a layer from the parent (with mutation)
-                    # vs. add a random layer
-                    if np.random.uniform(0, 1) < 0.5:
-                        offspring_d_layers.append(np.random.choice(d_layers_parent.copy()))
-                    else:
-                        offspring_d_layers.append(random_full_layer())
-                else:
-                    offspring_d_layers.append(random_full_layer())
+            if new_layer["type"] == "full" and len(offspring)<first_full:
+                pass
             else:
-                offspring_d_layers.append(d_layers_parent[p_counter].copy())
-                p_counter += 1
+                offspring.append(new_layer)
 
-        # now we'll have the option to mutate all the layers
+
+        # now we can add or delete a layer at random
+        if np.random.uniform(0, 1) < indel:
+            change = np.random.choice([-1, 1])
+
+            if change == -1:
+                del offspring[np.random.randint(0, len(offspring))]
+
+            if change == +1:
+                insertion_point = np.random.randint(0, len(offspring)+1) # +1 to insert at the end
+
+                if insertion_point >= first_full:
+                    insertion_layer = random_d_layer()
+                else:
+                    insertion_layer = random_cpbd_layer()
+
+            offspring.insert(insertion_point, insertion_layer)
+
+        # finally, we'll mutate all the layers
         pre_mutation = offspring_cp_layers.copy() + offspring_d_layers.copy()
         post_mutation = []
         for layer in pre_mutation:
             post_mutation.append(mutate_layer(layer.copy(), mutrate))
 
         return(post_mutation)
+
 
     def recombination(self, current_parent, parents = None):
 
