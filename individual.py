@@ -219,8 +219,11 @@ class Individual(object):
             new_layer = add_dropout_layer(layer)
             new_layer = Dropout.from_config(new_layer)
         if layer_type == "batchnorm":
-            new_layer = BatchNormalization()
 
+            if prev_type in ["conv", "pool"]:
+                new_layer = BatchNormalization(index = 3) # normalise across channels
+            else:
+                new_layer = BatchNormalization()
 
         self.model.add(new_layer)
 
