@@ -20,7 +20,7 @@ def batchnorm_layer():
 
 def random_dropout_layer():
     dropout_layer = {"type": "dropout",
-                     "droupout": np.random.choice(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)}
+                     "dropout": np.random.choice([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])}
 
 def add_dropout_layer(layer):
 
@@ -167,3 +167,9 @@ def print_layer(layer):
 
     if layer["type"] == "pool":
         print("pool: %dx%d, s=%d, p=%s" %(layer["pool_size"], layer["pool_size"], layer["strides"], layer["padding"]))
+
+    if layer["type"] == "dropout":
+        print("dropout: %.2f" %(layer["dropout"]))
+
+    if layer["type"] == "batchnorm":
+        print("BatchNorm")

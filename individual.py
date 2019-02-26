@@ -76,6 +76,7 @@ class Individual(object):
         genotype = {'params': params, 'network': network, 'training': training}
 
         self.genotype = genotype
+        self.print_genotype()
 
 
     def build_network(self):
