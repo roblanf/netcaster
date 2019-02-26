@@ -57,18 +57,20 @@ class Individual(object):
 
         network = []
         for i in range(num_cp_layers):
-            new_layer = random_cp_layer()
+            # always start with a cp layer
+            if i==0:
+                new_layer = random_cp_layer()
+            else:
+                new_layer = random_cpbd_layer()
+
             network.append(new_layer)
 
         for i in range(num_d_layers):
-            network.append(random_full_layer())
+            network.append(random_d_layer())
 
-        epochs = np.random.randint(5, 10)
+        epochs = np.random.randint(5, 20)
 
-        training = []
-        for i in range(epochs):
-            # add minibatch sizes for epochs
-            training.append(np.random.choice([512, 1024])) 
+        training = [512]*epochs # let's start simple
 
         # genotype has parameters, then network architecture, then training epochs
         genotype = {'params': params, 'network': network, 'training': training}
@@ -164,15 +166,13 @@ class Individual(object):
                     self.fitness = 0
 
         else: # we get the genotype from the parents
-            try:
+            try:    
                 self.make_genotype()
                 self.build_network()
                 self.train_network(X_train, Y_train)
                 self.test_network(X_val, Y_val)
             except:
-                # that offspring didn't work
                 self.fitness = 0
-
 
         return(self.fitness)
 
@@ -226,6 +226,7 @@ class Individual(object):
         self.genotype["params"] = offspring_params
         # network
         offspring_network = self.get_offspring_network()
+        print(offspring_network)
         self.genotype["network"] = offspring_network
         # training
         offspring_training = self.get_offspring_training()
@@ -240,23 +241,27 @@ class Individual(object):
         current_parent = np.random.choice(self.parents)
         mutrate = current_parent["params"]["mutation"] # start with the mutation rate from the current parent
         if self.mcmc==False:
-            mutrate = mutate_product(mutrate, size = 1.05, limits = [0, 1], mutrate = mutrate)
+            # just so the mutation rate never actually stays at zero forever
+            if mutrate<0.1:
+                min_mutrate = 0.01
+            else:
+                min_mutrate = mutrate
+            mutrate = mutate_float_fixed(mutrate, size = 0.1, limits = [0, 1], mutrate = min_mutrate)
 
         # optimiser and learning rate
         current_parent = self.recombination(current_parent)
-        optimiser, learning_rate = mutate_optimiser(current_parent["params"]["optimiser"], current_parent["params"]["learning_rate"], size = 1.05, limits = [0, 1], mutrate = current_parent["params"]["learning_rate_mutrate"])
+        optimiser, learning_rate = mutate_optimiser(current_parent["params"]["optimiser"], current_parent["params"]["learning_rate"], size = 1.05, limits = [0, 1], mutrate = mutrate)
 
         # indel rate
         indel = current_parent["params"]["indel"]
         if self.mcmc==False:
             current_parent = self.recombination(current_parent)
-            indel = mutate_product(indel, size = 1.05, limits = [0, 1], mutrate = mutrate)
+            indel = mutate_float_fixed(indel, size = 0.1, limits = [0, 1], mutrate = mutrate)
 
         params =   {"mutation": mutrate,
                     "optimiser": optimiser,
                     "learning_rate": learning_rate,
-                    "indel": indel,
-                    }
+                    "indel": indel}
 
         return(params)
 
@@ -314,7 +319,7 @@ class Individual(object):
                     # 50/50 split: choose a layer from the parent (with mutation)
                     # vs. add a random cp layer
                     if np.random.uniform(0, 1) < 0.5:
-                        offspring_cp_layers.append(mutate_layer(np.random.choice(cp_layers_parent.copy())))
+                        offspring_cp_layers.append(np.random.choice(cp_layers_parent.copy()))
                     else:
                         offspring_cp_layers.append(random_cp_layer())
                 else:
@@ -365,7 +370,7 @@ class Individual(object):
                     # 50/50 split: choose a layer from the parent (with mutation)
                     # vs. add a random layer
                     if np.random.uniform(0, 1) < 0.5:
-                        offspring_d_layers.append(mutate_layer(np.random.choice(d_layers_parent.copy())))
+                        offspring_d_layers.append(np.random.choice(d_layers_parent.copy()))
                     else:
                         offspring_d_layers.append(random_full_layer())
                 else:
@@ -379,7 +384,6 @@ class Individual(object):
         post_mutation = []
         for layer in pre_mutation:
             post_mutation.append(mutate_layer(layer.copy(), mutrate))
-
 
         return(post_mutation)
 
@@ -399,6 +403,7 @@ class Individual(object):
     def get_offspring_training(self):
 
         parents = self.parents.copy()
+        mutrate = self.genotype["params"]["mutation"]
 
         # choose a parent
         current_parent = np.random.choice(parents)
@@ -406,7 +411,7 @@ class Individual(object):
         # get the number of epochs from the current parent
         # mutate it up or down by up to 1 epoch
         num_epochs = len(current_parent["training"])
-        num_epochs = mutate_int_fixed(num_epochs, 1, [1, 100], self.genotype["params"]["epoch_mutrate"])
+        num_epochs = mutate_int_fixed(num_epochs, 1, [1, 100], mutrate)
 
         offspring_training = []
         while len(offspring_training) < num_epochs:
@@ -416,7 +421,7 @@ class Individual(object):
             if len(current_parent["training"]) > len(offspring_training):
                 # current parent has enough epochs
                 next_batchsize = current_parent["training"][len(offspring_training)]
-                next_batchsize = mutate_batchsize(next_batchsize, self.genotype["params"]["batchsize_mutrate"])
+                next_batchsize = mutate_batchsize(next_batchsize, mutrate)
                 offspring_training.append(next_batchsize)
 
             else: # current parent doesn't have enough epochs
@@ -450,7 +455,7 @@ class Individual(object):
         print(len(self.genotype["training"]), "epochs")
         print(self.genotype["training"])
         print("mutation: ", self.genotype["params"]["mutation"])
-        print("learning_rate: ", genotype["params"]["learning_rate"])
+        print("learning_rate: ", self.genotype["params"]["learning_rate"])
         print("optimiser: ", self.genotype["params"]["optimiser"])
         print("indel: ", self.genotype["params"]["indel"])
 

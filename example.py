@@ -60,10 +60,9 @@ loss = 'categorical_crossentropy'
 
 
 # test mcmc code, delete
-mcmc = Lineage(input_shape, output_config, loss, X_train, Y_train, X_val, Y_val, trainsize = 30000, valsize = 9000)
-mcmc.initialise(50)
-mcmc.evolve([20]*10, keep=1)
-mcmc.hillclimb(500)
+mcmc = Lineage(input_shape, output_config, loss, X_train, Y_train, X_val, Y_val, trainsize = 3000, valsize = 900)
+mcmc.initialise(2)
+mcmc.hillclimb(2)
 
 
 

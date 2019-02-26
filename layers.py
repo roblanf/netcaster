@@ -7,6 +7,13 @@ from keras.layers import BatchNormalization
 
 base_mr = 0.2 # a simple global default for initalising all mutation rates
 
+
+def random_batchnorm_layer():
+
+    batch_layer = {"type": "batchnorm"}
+
+    return(batch_layer)
+
 def batchnorm_layer():
     
     return(BatchNormalization())
@@ -21,6 +28,37 @@ def add_dropout_layer(layer):
     new_layer = new_layer.get_config()
     return(new_layer)
 
+def random_d_layer():
+
+    # this makes sure we don't try and add conv/pool
+    # layers after dense layers
+    r = np.random.choice(["full", "full", "dropout", "norm"])
+
+    if r == "full":
+        return(random_full_layer())
+    if r == "dropout":
+        return(random_dropout_layer())
+    if r == "norm":
+        return(random_batchnorm_layer())
+
+
+
+def random_cpbd_layer():
+
+    # this makes sure we don't try and add conv/pool
+    # layers after dense layers
+    r = np.random.choice(["conv", "conv", "pool", "pool", "dropout", "norm"])
+
+    if r == "conv":
+        return(random_conv_layer())
+    if r == "pool":
+        return(random_pool_layer())
+    if r == "dropout":
+        return(random_dropout_layer())
+    if r == "norm":
+        return(random_batchnorm_layer())
+
+
 def random_cp_layer():
 
     # this makes sure we don't try and add conv/pool
@@ -31,6 +69,7 @@ def random_cp_layer():
         return(random_conv_layer())
     if r == "pool":
         return(random_pool_layer())
+
 
 def add_conv_layer(layer, input_shape):
 
@@ -121,10 +160,10 @@ def random_full_layer():
 def print_layer(layer):
 
     if layer["type"] == "full":
-        print("full: %d; d %.2f; n %d; m %.2f"  %(layer["units"], layer["dropout"], layer["norm"], layer["mutrate"]))
+        print("full: %d"  %(layer["units"]))
 
     if layer["type"] == "conv":
-        print("conv: %dx%dx%d, s=%d, p=%s; d %.2f; n %d; m %.2f" %(layer["kernel"], layer["kernel"], layer["filters"], layer["strides"], layer["padding"], layer["dropout"], layer["norm"], layer["mutrate"]))
+        print("conv: %dx%dx%d, s=%d, p=%s" %(layer["kernel"], layer["kernel"], layer["filters"], layer["strides"], layer["padding"]))
 
     if layer["type"] == "pool":
-        print("pool: %dx%d, s=%d, p=%s; m %.2f" %(layer["pool_size"], layer["pool_size"], layer["strides"], layer["padding"], layer["mutrate"]))
+        print("pool: %dx%d, s=%d, p=%s" %(layer["pool_size"], layer["pool_size"], layer["strides"], layer["padding"]))

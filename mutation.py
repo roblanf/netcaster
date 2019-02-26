@@ -131,8 +131,10 @@ def mutate_layer(layer, mutrate):
     if layer["type"] == "pool":
         layer = mutate_pool_layer(layer, mutrate)
 
-    return(layer)
+    if layer["type"] == "dropout":
+        layer = mutate_dropout_layer(layer, mutrate)
 
+    return(layer)
 
 def mutate_dropout_layer(layer, mutrate):
 
