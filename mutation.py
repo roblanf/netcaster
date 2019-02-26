@@ -126,11 +126,6 @@ def mutate_conv_layer(layer):
     if np.random.uniform(0, 1) < layer["mutrate"]:
         layer["padding"] = np.random.choice(["valid", "same"])
 
-    layer["dropout"] = mutate_addition(layer["dropout"], 0.05, [0.0, 1.0], layer["mutrate"])
-
-    if np.random.uniform(0, 1) < layer["mutrate"]/10: # 1/10th of the mutation rate, because this is a big change
-        layer["norm"] = np.random.choice([0, 1])
-
     layer["mutrate"] = mutate_addition(layer["mutrate"], 0.05, [0.01, 1.0], layer["mutrate"])
 
     return(layer)
@@ -152,11 +147,6 @@ def mutate_pool_layer(layer):
 def mutate_full_layer(layer):
 
     layer["units"] = mutate_int(layer["units"], 0.2, [1, 10000], layer["mutrate"])
-    layer["dropout"] = mutate_addition(layer["dropout"], 0.05, [0.0, 1.0], layer["mutrate"])
-
-    if np.random.uniform(0, 1) < layer["mutrate"]/10:
-        layer["norm"] = np.random.choice([0, 1])
-
     layer["mutrate"] = mutate_addition(layer["mutrate"], 0.05, [0.01, 1.0], layer["mutrate"])
 
     return(layer)
