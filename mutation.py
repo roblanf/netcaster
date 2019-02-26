@@ -140,6 +140,8 @@ def mutate_dropout_layer(layer, mutrate):
 
     layer["dropout"] = mutate_float_fixed(layer["dropout"], 0.1, [0.1, 0.9], mutrate)
 
+    return(layer)
+
 def mutate_conv_layer(layer, mutrate):
 
     layer["filters"] = mutate_int_fixed(layer["filters"], 1, [1, 1000], mutrate)

@@ -37,11 +37,6 @@ class Individual(object):
     def random_genotype(self, mutrate = 0.2, indel=0.3):
         # generate a random CNN genotype with sensible defaults
 
-        # number of conv and pooling layers at the start
-        num_cp_layers = np.random.randint(2, 8)
-
-        # number of fully connected layers
-        num_d_layers = np.random.randint(1, 3)
 
         # genotype hyperparameters
         # to get a random optimiser:
@@ -53,8 +48,13 @@ class Individual(object):
         params =   {"mutation": mutrate,
                     "optimiser": opt[0],
                     "learning_rate": opt[1],
-                    "indel": indel, # chance of inserting/deleting layers in the network
-                    }
+                    "indel": indel}
+
+        # number of conv and pooling layers at the start
+        num_cp_layers = np.random.randint(2, 8)
+
+        # number of fully connected layers
+        num_d_layers = np.random.randint(1, 3)
 
         network = []
         for i in range(num_cp_layers):
@@ -70,6 +70,7 @@ class Individual(object):
             network.append(random_d_layer())
 
         epochs = np.random.randint(5, 20)
+        epochs = np.random.randint(1, 2) # for quick testing
 
         training = [512]*epochs # let's start simple
 
@@ -173,6 +174,7 @@ class Individual(object):
 
         else: # we get the genotype from the parents
                 self.make_genotype()
+                print_genotype(self.genotype)
                 self.build_network()
                 self.train_network(X_train, Y_train)
                 self.test_network(X_val, Y_val)
@@ -315,14 +317,21 @@ class Individual(object):
             # check that it's not a full layer if we can't have one yet
             new_layer = current_parent["network"][len(offspring)]
 
+            print("adding", new_layer)
+
             if new_layer["type"] == "full" and len(offspring)<first_full:
                 pass
             else:
                 offspring.append(new_layer)
 
+            print(offspring)
+
 
         # now we can add or delete a layer at random
         if np.random.uniform(0, 1) < indel:
+
+            print("INDEL")
+
             change = np.random.choice([-1, 1])
 
             if change == -1:
@@ -336,13 +345,16 @@ class Individual(object):
                 else:
                     insertion_layer = random_cpbd_layer()
 
-            offspring.insert(insertion_point, insertion_layer)
+                offspring.insert(insertion_point, insertion_layer)
+        
+        print(offspring)
 
         # finally, we'll mutate all the layers
-        pre_mutation = offspring_cp_layers.copy() + offspring_d_layers.copy()
         post_mutation = []
-        for layer in pre_mutation:
+        for layer in offspring:
             post_mutation.append(mutate_layer(layer.copy(), mutrate))
+
+        print(post_mutation)
 
         return(post_mutation)
 

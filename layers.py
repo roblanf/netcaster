@@ -94,7 +94,7 @@ def random_conv_layer():
     conv_layer =    {"type": "conv",
                      "filters": np.random.randint(2,24),
                      "kernel": np.random.randint(1,10),
-                     "strides": np.random.randint(1,10),
+                     "strides": np.random.randint(1,3),
                      "padding": np.random.choice(["valid", "same"]),
                      "mutrate": base_mr}
 
@@ -123,7 +123,7 @@ def add_pool_layer(layer, input_shape):
 def random_pool_layer():
 
     pool_layer =    {"type": "pool",
-                     "pool_size": np.random.randint(2,4),
+                     "pool_size": np.random.randint(2,5),
                      "strides": np.random.randint(1,3),
                      "padding": np.random.choice(["valid", "same"]),
                      "mutrate": base_mr}
@@ -166,7 +166,7 @@ def print_layer(layer):
         print("pool: %dx%d, s=%d, p=%s" %(layer["pool_size"], layer["pool_size"], layer["strides"], layer["padding"]))
 
     if layer["type"] == "dropout":
-        print("dropout: %.2f" %(layer["dropout"]))
+        print("drop: %.2f" %(layer["dropout"]))
 
     if layer["type"] == "batchnorm":
-        print("BatchNorm")
+        print("batch: standard")
