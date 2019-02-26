@@ -7,7 +7,6 @@ from keras.layers import MaxPooling2D
 from keras.layers import Flatten
 from keras.layers import Dense
 from keras.layers import Dropout
-from keras.layers import BatchNormalization
 from pprint import pprint
 from time import time
 import random
@@ -211,14 +210,6 @@ class Individual(object):
 
         self.model.add(new_layer)
 
-        # add dropout, norm, residual 
-        if layer.get("dropout", False):
-            # dropout at a rate determined by genotype
-            self.model.add(Dropout(layer["dropout"]))
-
-        if layer.get("norm", False):
-            # we just add normalization with default params
-            self.model.add(BatchNormalization())
 
         # TODO add residual connection, e.g. by a flag
         # where we store this layer and a value (e.g. +2)

@@ -3,8 +3,34 @@ from keras.layers import Conv2D
 from keras.layers import MaxPooling2D
 from keras.layers import Dense
 import numpy as np
+from keras.layers import BatchNormalization
 
 base_mr = 0.2 # a simple global default for initalising all mutation rates
+
+def batchnorm_layer():
+    
+    return(BatchNormalization())
+
+def random_dropout_layer():
+    dropout_layer = {"type": "dropout",
+                     "droupout": np.random.choice(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)}
+
+def add_dropout_layer(layer):
+
+    new_layer = Dropout(layer["dropout"])
+    new_layer = new_layer.get_config()
+    return(new_layer)
+
+def random_cp_layer():
+
+    # this makes sure we don't try and add conv/pool
+    # layers after dense layers
+    r = np.random.choice(["conv", "pool"])
+
+    if r == "conv":
+        return(random_conv_layer())
+    if r == "pool":
+        return(random_pool_layer())
 
 def add_conv_layer(layer, input_shape):
 
@@ -33,25 +59,9 @@ def random_conv_layer():
                      "kernel": np.random.randint(1,10),
                      "strides": np.random.randint(1,10),
                      "padding": np.random.choice(["valid", "same"]),
-                     "mutrate": base_mr,
-                     "dropout": np.random.uniform(0.0, 0.99),
-                     "norm": np.random.choice([0, 1])}
+                     "mutrate": base_mr}
 
     return(conv_layer)
-
-
-
-def random_cp_layer():
-
-    # this makes sure we don't try and add conv/pool
-    # layers after dense layers
-    r = np.random.choice(["conv", "pool"])
-
-    if r == "conv":
-        return(random_conv_layer())
-    if r == "pool":
-        return(random_pool_layer())
-
 
 
 def add_pool_layer(layer, input_shape):
@@ -103,9 +113,7 @@ def random_full_layer():
 
     full_layer =    {"type": "full",
                      "units": np.random.randint(4,200),
-                     "mutrate": base_mr,
-                     "dropout": np.random.uniform(0.0, 0.99),
-                     "norm": np.random.choice([0, 1])
+                     "mutrate": base_mr
                      }
 
     return(full_layer)
