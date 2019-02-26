@@ -7,6 +7,7 @@ from keras.layers import MaxPooling2D
 from keras.layers import Flatten
 from keras.layers import Dense
 from keras.layers import Dropout
+from keras.layers import BatchNormalization
 from pprint import pprint
 from time import time
 import random
@@ -152,11 +153,15 @@ class Individual(object):
                         self.build_network()
                         self.train_network(X_train, Y_train)
                         self.test_network(X_val, Y_val)
+
+                        self.model.summary()
+                        print("fitness:", self.fitness)
+
                     except:
-                        # we do this because sometimes
-                        # we build impossible networks
-                        
+                        # keep going until we generate a valid genotype
                         pass
+
+
             else: # genotype is already specified, e.g. by loading it in
                 try:
                     self.build_network()
@@ -190,6 +195,7 @@ class Individual(object):
         else:
             prev_type = 0
 
+        any_full = 0
         # use input shape for first layer, and not for future layers
         if len(self.model.layers)==0 and layer_type in ["conv", "pool"]:
             input_shape = self.input_shape
@@ -204,10 +210,17 @@ class Individual(object):
             new_layer = add_pool_layer(layer, input_shape)
             new_layer = MaxPooling2D.from_config(new_layer)
         if layer_type == "full":
-            if prev_type in ["conv", "pool", 0]:
+            if prev_type != "full" and any_full == 0:
                 self.model.add(Flatten())
+                any_full = 1
             new_layer = add_full_layer(layer, input_shape)
             new_layer = Dense.from_config(new_layer)
+        if layer_type == "dropout":
+            new_layer = add_dropout_layer(layer)
+            new_layer = Dropout.from_config(new_layer)
+        if layer_type == "batchnorm":
+            new_layer = BatchNormalization()
+
 
         self.model.add(new_layer)
 
@@ -225,10 +238,11 @@ class Individual(object):
         # params
         offspring_params = self.get_offspring_params()
         self.genotype["params"] = offspring_params
+
         # network
         offspring_network = self.get_offspring_network()
-        print(offspring_network)
         self.genotype["network"] = offspring_network
+
         # training
         offspring_training = self.get_offspring_training()
         self.genotype["training"] = offspring_training

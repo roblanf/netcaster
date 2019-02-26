@@ -2,8 +2,8 @@ from mutation import *
 from keras.layers import Conv2D
 from keras.layers import MaxPooling2D
 from keras.layers import Dense
+from keras.layers import Dropout
 import numpy as np
-from keras.layers import BatchNormalization
 
 base_mr = 0.2 # a simple global default for initalising all mutation rates
 
@@ -14,13 +14,11 @@ def random_batchnorm_layer():
 
     return(batch_layer)
 
-def batchnorm_layer():
-    
-    return(BatchNormalization())
-
 def random_dropout_layer():
     dropout_layer = {"type": "dropout",
                      "dropout": np.random.choice([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])}
+
+    return(dropout_layer)
 
 def add_dropout_layer(layer):
 
@@ -151,9 +149,8 @@ def add_full_layer(layer, input_shape):
 def random_full_layer():
 
     full_layer =    {"type": "full",
-                     "units": np.random.randint(4,200),
-                     "mutrate": base_mr
-                     }
+                     "units": np.random.randint(2,400),
+                     "mutrate": base_mr}
 
     return(full_layer)
 
