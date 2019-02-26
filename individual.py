@@ -51,13 +51,9 @@ class Individual(object):
         opt = ("Adam", 0.001)
 
         params =   {"mutation": mutrate,
-                    "recomb": 1.0, # generally we expect higher recombination to be better
                     "optimiser": opt[0],
                     "learning_rate": opt[1],
-                    "learning_rate_mutrate": mutrate, # mutation size for learning rate
-                    "slip": 0.3, # chance of adding new layers to network
-                    "epoch_mutrate": mutrate, # mutation rate applied to # epochs
-                    "batchsize_mutrate": mutrate # mutation rate for batch size
+                    "indel": 0.3, # chance of inserting/deleting layers in the network
                     }
 
         network = []
@@ -255,48 +251,20 @@ class Individual(object):
         if self.mcmc==False:
             mutrate = mutate_product(mutrate, size = 1.05, limits = [0, 1], mutrate = mutrate)
 
-        # recombination rate
-        recomb = current_parent["params"]["recomb"]
-        if self.mcmc==False:
-            current_parent = self.recombination(current_parent)
-            recomb = mutate_product(recomb, size = 1.05, limits = [0, 1], mutrate = mutrate)
-
         # optimiser and learning rate
         current_parent = self.recombination(current_parent)
         optimiser, learning_rate = mutate_optimiser(current_parent["params"]["optimiser"], current_parent["params"]["learning_rate"], size = 1.05, limits = [0, 1], mutrate = current_parent["params"]["learning_rate_mutrate"])
 
-        # learning_rate_mutrate
-        learning_rate_mutrate = current_parent["params"]["learning_rate_mutrate"]
+        # indel rate
+        indel = current_parent["params"]["indel"]
         if self.mcmc==False:
             current_parent = self.recombination(current_parent)
-            learning_rate_mutrate =  mutate_product(learning_rate_mutrate, size = 1.05, limits = [0, 1], mutrate = mutrate)
-
-        # slippage rate
-        slip = current_parent["params"]["slip"]
-        if self.mcmc==False:
-            current_parent = self.recombination(current_parent)
-            slip = mutate_product(slip, size = 1.05, limits = [0, 1], mutrate = mutrate)
-
-        # epoch mutation rate
-        epoch_mutrate = current_parent["params"]["epoch_mutrate"]
-        if self.mcmc==False:
-            current_parent = self.recombination(current_parent)
-            epoch_mutrate = mutate_product(epoch_mutrate, size = 1.05, limits = [0, 1], mutrate = mutrate)
-
-        # epoch mutation rate
-        batchsize_mutrate = current_parent["params"]["batchsize_mutrate"]
-        if self.mcmc==False:
-            current_parent = self.recombination(current_parent)
-            batchsize_mutrate = mutate_product(batchsize_mutrate, size = 1.05, limits = [0, 1], mutrate = mutrate)
+            indel = mutate_product(indel, size = 1.05, limits = [0, 1], mutrate = mutrate)
 
         params =   {"mutation": mutrate,
-                    "recomb": recomb,
                     "optimiser": optimiser,
                     "learning_rate": learning_rate,
-                    "learning_rate_mutrate": learning_rate_mutrate,                    
-                    "slip": slip,
-                    "epoch_mutrate": epoch_mutrate, 
-                    "batchsize_mutrate": batchsize_mutrate
+                    "indel": indel,
                     }
 
         return(params)
@@ -304,16 +272,14 @@ class Individual(object):
 
     def get_offspring_network(self):
 
-
-        recomb = self.genotype["params"]["recomb"]
         parents = self.parents.copy()
 
         if self.mcmc==False:            
             mutrate = self.genotype["params"]["mutation"]
-            slip = self.genotype["params"]["slip"]
+            indel = self.genotype["params"]["indel"]
         else:
             mutrate = 0.1
-            slip = 0.5
+            indel = 0.5
 
         # we'll start with the conv and pool layers, then rinse and repeat for the dense layers
         # choose a parent
@@ -329,7 +295,7 @@ class Individual(object):
         # here's where we see if we'll change the number of layers
         # we change by at most 1
         new_cp_nums = [] #placeholders for the index of new layers, if we get them
-        if np.random.uniform(0, 1) < slip:
+        if np.random.uniform(0, 1) < indel:
             layer_change = np.random.choice([-1, 1])
             num_cp_layers = max(0, (num_cp_layers + layer_change))
             if layer_change > 0:
@@ -380,7 +346,7 @@ class Individual(object):
         # here's where we see if we'll change the number of layers
         # we change by at most 2, with a bias towards adding layers
         new_d_nums = [] #placeholders for the index of new layers, if we get them
-        if np.random.uniform(0, 1) < slip:
+        if np.random.uniform(0, 1) < indel:
             layer_change = np.random.choice([-1, 1])
             num_d_layers = max(0, len(d_layers_parent) + layer_change)
             if layer_change > 0:
@@ -441,7 +407,6 @@ class Individual(object):
 
     def get_offspring_training(self):
 
-        recomb = self.genotype["params"]["recomb"]
         parents = self.parents.copy()
 
         # choose a parent
@@ -494,13 +459,9 @@ class Individual(object):
         print(len(self.genotype["training"]), "epochs")
         print(self.genotype["training"])
         print("mutation: ", self.genotype["params"]["mutation"])
-        print("recombination: ", self.genotype["params"]["recomb"])
-        print("learning_rate: ", self.genotype["params"]["learning_rate"])
-        print("learning_rate_mr: ", self.genotype["params"]["learning_rate_mutrate"])
+        print("learning_rate: ", genotype["params"]["learning_rate"])
         print("optimiser: ", self.genotype["params"]["optimiser"])
-        print("slip: ", self.genotype["params"]["slip"])
-        print("epoch_mutrate: ", self.genotype["params"]["epoch_mutrate"])
-        print("batchsize_mutrate: ", self.genotype["params"]["batchsize_mutrate"])
+        print("indel: ", self.genotype["params"]["indel"])
 
 
 
@@ -513,11 +474,7 @@ def print_genotype(genotype):
         print(len(genotype["training"]), "epochs")
         print(genotype["training"])
         print("mutation: ", genotype["params"]["mutation"])
-        print("recombination: ", genotype["params"]["recomb"])
         print("learning_rate: ", genotype["params"]["learning_rate"])
-        print("learning_rate_mr: ", genotype["params"]["learning_rate_mutrate"])
         print("optimiser: ", genotype["params"]["optimiser"])
-        print("slip: ", genotype["params"]["slip"])
-        print("epoch_mutrate: ", genotype["params"]["epoch_mutrate"])
-        print("batchsize_mutrate: ", genotype["params"]["batchsize_mutrate"])
+        print("indel: ", genotype["params"]["indel"])
 
