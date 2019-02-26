@@ -155,9 +155,6 @@ class Individual(object):
                         self.train_network(X_train, Y_train)
                         self.test_network(X_val, Y_val)
 
-                        self.model.summary()
-                        print("fitness:", self.fitness)
-
                     except:
                         # keep going until we generate a valid genotype
                         pass
@@ -174,7 +171,6 @@ class Individual(object):
 
         else: # we get the genotype from the parents
                 self.make_genotype()
-                print_genotype(self.genotype)
                 self.build_network()
                 self.train_network(X_train, Y_train)
                 self.test_network(X_val, Y_val)
@@ -317,20 +313,14 @@ class Individual(object):
             # check that it's not a full layer if we can't have one yet
             new_layer = current_parent["network"][len(offspring)]
 
-            print("adding", new_layer)
-
             if new_layer["type"] == "full" and len(offspring)<first_full:
                 pass
             else:
                 offspring.append(new_layer)
 
-            print(offspring)
-
 
         # now we can add or delete a layer at random
         if np.random.uniform(0, 1) < indel:
-
-            print("INDEL")
 
             change = np.random.choice([-1, 1])
 
@@ -347,14 +337,10 @@ class Individual(object):
 
                 offspring.insert(insertion_point, insertion_layer)
         
-        print(offspring)
-
         # finally, we'll mutate all the layers
         post_mutation = []
         for layer in offspring:
             post_mutation.append(mutate_layer(layer.copy(), mutrate))
-
-        print(post_mutation)
 
         return(post_mutation)
 
