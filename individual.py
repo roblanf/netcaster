@@ -33,7 +33,7 @@ class Individual(object):
         else:
             self.offspring_genotype()
 
-    def random_genotype(self, mutrate = 0.1):
+    def random_genotype(self, mutrate = 0.2, indel=0.3):
         # generate a random CNN genotype with sensible defaults
 
         # number of conv and pooling layers at the start
@@ -52,7 +52,7 @@ class Individual(object):
         params =   {"mutation": mutrate,
                     "optimiser": opt[0],
                     "learning_rate": opt[1],
-                    "indel": 0.3, # chance of inserting/deleting layers in the network
+                    "indel": indel, # chance of inserting/deleting layers in the network
                     }
 
         network = []
@@ -378,7 +378,7 @@ class Individual(object):
         pre_mutation = offspring_cp_layers.copy() + offspring_d_layers.copy()
         post_mutation = []
         for layer in pre_mutation:
-            post_mutation.append(mutate_layer(layer.copy()))
+            post_mutation.append(mutate_layer(layer.copy(), mutrate))
 
 
         return(post_mutation)
