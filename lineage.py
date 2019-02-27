@@ -180,15 +180,10 @@ class Lineage(object):
 
             # start with the most recent lineage
             pop = self.lineage[-1].copy()
-            fitness = [x[0] for x in pop]
-            fitness_orig = fitness.copy()
 
             # subsample the validation and training data in each generation
             X_val_sample, Y_val_sample = self.subsample_val()
             X_train_sample, Y_train_sample = self.subsample_train()
-
-            # only do this now, in case of issues in the prior steps
-            self.save_lineage()
 
             offspring = []
 
@@ -208,9 +203,11 @@ class Lineage(object):
                 offspring.append((f1.fitness, f1.training_time, f1.genotype, f1.test_time, f1.accuracy))
                 self.clean_up()
                 del f1
-
+                
             offspring.sort(key=lambda tup: tup[0])
             self.lineage.append(offspring)
+            self.save_lineage()
+
 
             print("\n\nBest individual of generation", gen)
             gen += 1
@@ -218,10 +215,9 @@ class Lineage(object):
             print_genotype(current_ind[2])
             print("Accuracy: ", current_ind[4])
             print("Traintime: ", current_ind[1])
-            print("Fitness: ", current_ind[0])
+            print("Fitness: ", current_ind[0], "\n")
 
-
-    def hillclimb(self, iterations):
+    def explore(self, iterations, type='climb'):
         # evolve a lineage using hill climbing
         
         # get the best genotype
@@ -256,17 +252,20 @@ class Lineage(object):
             print("Bestfit: ", current_ind[0])
 
 
-            acceptance_ratio = np.square(proposal.fitness) / np.square(current_ind[0])
+            acceptance_ratio = proposal.fitness / current_ind[0]
 
-            if acceptance_ratio > 1:
+            if type=='climb' and acceptance_ratio > 1:
 
                 current_ind = (proposal.fitness, proposal.training_time, proposal.genotype, proposal.test_time, proposal.accuracy)
-
                 print("New best genotype")
 
-                self.lineage.append([current_ind])
-                self.save_lineage()
+            elif type=='mcmc' and acceptance_ratio > np.random.uniform(0, 1):
+                
+                current_ind = (proposal.fitness, proposal.training_time, proposal.genotype, proposal.test_time, proposal.accuracy)
+                print("MCMC proposal accepted")
 
+            self.lineage.append([current_ind])
+            self.save_lineage()
             self.clean_up()
             del proposal
 
