@@ -175,7 +175,7 @@ class Lineage(object):
     def evolve(self, generations, num_parents = 2, keep = 0, kill = 0, selection = "rank2"):
         # evolve a population
         # generations is a list of population sizes
-
+        gen = 1
         for g in generations:
 
             # start with the most recent lineage
@@ -202,8 +202,6 @@ class Lineage(object):
 
             # breed the rest of offspring from what's left of pop
             while len(offspring) < g:
-                fitness = [x[0] for x in pop]
-
                 parents = self.choose_n_parents(pop, num_parents, selection)
                 f1 = Individual(self.input_shape, self.out_config, self.loss, parents=parents)
                 f1.get_fitness(X_train_sample, Y_train_sample, X_val_sample, Y_val_sample)
@@ -214,9 +212,8 @@ class Lineage(object):
             offspring.sort(key=lambda tup: tup[0])
             self.lineage.append(offspring)
 
-            fitness = [x[0] for x in offspring]
-
-            print("\n\nBest individual of generation", g)
+            print("\n\nBest individual of generation", gen)
+            gen += 1
             current_ind = self.lineage[-1][-1]
             print_genotype(current_ind[2])
             print("Accuracy: ", current_ind[4])
