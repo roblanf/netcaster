@@ -166,7 +166,7 @@ class Individual(object):
                     self.test_network(X_val, Y_val)
                 except:
                     # that genotype was shit
-                    self.fitness = 0
+                    self.accuracy = 0
 
         else: # we get the genotype from the parents
             try:
@@ -175,8 +175,7 @@ class Individual(object):
                 self.train_network(X_train, Y_train)
                 self.test_network(X_val, Y_val)
             except:
-                fitness = 0
-
+                self.accuracy = 0
         # define fitness
         # this is 90% accuracy, and 10% training time
         # where we don't reward training times lower than min_time seconds
@@ -271,10 +270,12 @@ class Individual(object):
             else:
                 min_mutrate = mutrate
             mutrate = mutate_float_fixed(mutrate, size = 0.1, limits = [0, 1], mutrate = min_mutrate)
+        else:
+            mutrate = 0.2
 
         # optimiser and learning rate
         current_parent = self.recombination(current_parent)
-        optimiser, learning_rate = mutate_optimiser(current_parent["params"]["optimiser"], current_parent["params"]["learning_rate"], size = 1.05, limits = [0, 1], mutrate = mutrate)
+        optimiser, learning_rate = mutate_optimiser(current_parent["params"]["optimiser"], current_parent["params"]["learning_rate"], size = 2.0, limits = [0, 1], mutrate = mutrate)
 
         # indel rate
         indel = current_parent["params"]["indel"]
@@ -296,7 +297,7 @@ class Individual(object):
             mutrate = self.genotype["params"]["mutation"]
             indel = self.genotype["params"]["indel"]
         else:
-            mutrate = 0.1
+            mutrate = 0.2
             indel = 0.5
 
         # choose a parent
@@ -318,7 +319,7 @@ class Individual(object):
         while len(offspring) < num_layers:
 
             # keep trying the parents at random until you get one with this layer index
-            while len(current_parent["network"]) < len(offspring):
+            while len(current_parent["network"]) < len(offspring) + 1:
                 current_parent = self.recombination(current_parent)
 
             # check that it's not a full layer if we can't have one yet
@@ -405,14 +406,11 @@ class Individual(object):
                     break
 
         # if we get to here, the offspring still needs epochs, and the parents have run out
-        # epochs of batch sizes randomly selected from the two parents
+        # so we'll just add more epochs that look like the final epoch
         if len(offspring_training) < num_epochs:
-            parent_epochs = []
-            for p in self.parents:
-                parent_epochs += p["training"]
 
             while len(offspring_training) < num_epochs:
-                offspring_training.append(np.random.choice(parent_epochs))
+                offspring_training.append(offspring_training[-1])
 
         return(offspring_training)
 
