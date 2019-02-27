@@ -21,9 +21,10 @@ class Individual(object):
         self.parents = parents              # a list of P parents genotypes, from which we can generate offspring
         self.input_shape = input_shape      # shape of input data, from np.shape(X_train), where dim 0 is N
         self.out_config = out_config        # keras layer to put on as the ouput layer at the end
-        self.loss = loss                    # loss function, e.g. "categorical crossentropy"
+        self.loss_function = loss                    # loss function, e.g. "categorical crossentropy"
         self.genotype = genotype            # a genotype, which can be passed in
         self.fitness = None
+        self.accuracy = None
         self.training_time = np.Inf         # in case there's an error during fitting
         self.test_time = np.Inf
         self.mcmc = mcmc                    # a flag because we evolve differently for hill climbing and mcmc
@@ -78,8 +79,6 @@ class Individual(object):
         genotype = {'params': params, 'network': network, 'training': training}
 
         self.genotype = genotype
-        self.print_genotype()
-
 
     def build_network(self):
         # build a keras network from genotype
@@ -90,8 +89,9 @@ class Individual(object):
         for layer_num in range(len(self.genotype["network"])):
             self.add_layer(layer_num)
 
-        # flatten if last layer isn't full
-        if self.genotype["network"][layer_num]["type"] in ["conv", "pool"]:
+        # add a flatten layer if there were no full layers in the network
+        layer_types = [x["type"] for x in self.genotype["network"]]
+        if 'full' not in layer_types:
             self.model.add(Flatten())
 
         # add the output layer (this is user-specified)
@@ -101,8 +101,9 @@ class Individual(object):
 
         # add an optimiser and compile the model
         optimiser = get_optimiser(self.genotype["params"]["optimiser"], self.genotype["params"]["learning_rate"])
+
         self.model.compile(optimizer = optimiser, 
-                           loss = self.loss, 
+                           loss = self.loss_function, 
                            metrics = ['accuracy'])
         
     def train_network(self, X_train, Y_train):
@@ -136,7 +137,7 @@ class Individual(object):
         self.test_time = end_time - start_time
 
         self.loss = evals[0]
-        self.fitness = evals[1] #fitness is just the test accuracy
+        self.accuracy = evals[1] #fitness is just the test accuracy
 
     def get_fitness(self, X_train, Y_train, X_val, Y_val):
         # a general function to return the fitness of any individual
@@ -148,17 +149,15 @@ class Individual(object):
         if self.parents == None:
 
             if self.genotype == None:
-                while(self.fitness == None):
-                    try:
+                while(self.accuracy == None):
+                    try: 
                         self.make_genotype()
                         self.build_network()
                         self.train_network(X_train, Y_train)
-                        self.test_network(X_val, Y_val)
-
+                        self.test_network(X_val, Y_val)                        
                     except:
-                        # keep going until we generate a valid genotype
+                        # keep trying until you find a random genotype that works
                         pass
-
 
             else: # genotype is already specified, e.g. by loading it in
                 try:
@@ -170,10 +169,22 @@ class Individual(object):
                     self.fitness = 0
 
         else: # we get the genotype from the parents
+            try:
                 self.make_genotype()
                 self.build_network()
                 self.train_network(X_train, Y_train)
                 self.test_network(X_val, Y_val)
+            except:
+                fitness = 0
+
+        # define fitness
+        # this is 90% accuracy, and 10% training time
+        # where we don't reward training times lower than min_time seconds
+        min_time = 60
+        #self.fitness = self.accuracy * 0.9 + (min_time/np.max([self.training_time, min_time])) * 0.1
+
+        # or we can just have fitness == accuracy
+        self.fitness = self.accuracy
 
         return(self.fitness)
 
@@ -216,7 +227,7 @@ class Individual(object):
         if layer_type == "batchnorm":
 
             if prev_type in ["conv", "pool"]:
-                new_layer = BatchNormalization(index = 3) # normalise across channels
+                new_layer = BatchNormalization(axis = 3) # normalise across channels
             else:
                 new_layer = BatchNormalization()
 

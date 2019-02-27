@@ -64,7 +64,7 @@ class Lineage(object):
         for i in range(N):
             random_ind = Individual(self.input_shape, self.out_config, self.loss)
             random_ind.get_fitness(X_train_sample, Y_train_sample, X_val_sample, Y_val_sample)
-            pop.append((random_ind.fitness, random_ind.training_time, random_ind.genotype, random_ind.test_time))
+            pop.append((random_ind.fitness, random_ind.training_time, random_ind.genotype, random_ind.test_time, random_ind.accuracy))
 
             self.clean_up()
             del random_ind
@@ -87,7 +87,7 @@ class Lineage(object):
         for g in genotypes:
             ind = Individual(self.input_shape, self.out_config, self.loss, genotype = g)
             ind.get_fitness(X_train_sample, Y_train_sample, X_val_sample, Y_val_sample)
-            pop.append((ind.fitness, ind.training_time, ind.genotype, ind.test_time))
+            pop.append((ind.fitness, ind.training_time, ind.genotype, ind.test_time, ind.accuracy))
 
             self.clean_up()
             del ind
@@ -207,7 +207,7 @@ class Lineage(object):
                 parents = self.choose_n_parents(pop, num_parents, selection)
                 f1 = Individual(self.input_shape, self.out_config, self.loss, parents=parents)
                 f1.get_fitness(X_train_sample, Y_train_sample, X_val_sample, Y_val_sample)
-                offspring.append((f1.fitness, f1.training_time, f1.genotype, f1.test_time))
+                offspring.append((f1.fitness, f1.training_time, f1.genotype, f1.test_time, f1.accuracy))
                 self.clean_up()
                 del f1
 
@@ -216,6 +216,14 @@ class Lineage(object):
 
             fitness = [x[0] for x in offspring]
 
+            print("\n\nBest individual of generation", g)
+            current_ind = self.lineage[-1][-1]
+            print_genotype(current_ind[2])
+            print("Accuracy: ", current_ind[4])
+            print("Traintime: ", current_ind[1])
+            print("Fitness: ", current_ind[0])
+
+
     def hillclimb(self, iterations):
         # evolve a lineage using hill climbing
         
@@ -223,6 +231,8 @@ class Lineage(object):
         current_ind = self.lineage[-1][-1]
         print("Starting genotype\n") 
         print_genotype(current_ind[2])
+        print("Accuracy: ", current_ind[4])
+        print("Traintime: ", current_ind[1])
         print("Fitness: ", current_ind[0])
 
         for i in range(iterations):
@@ -243,6 +253,8 @@ class Lineage(object):
             proposal.get_fitness(X_train_sample, Y_train_sample, X_val_sample, Y_val_sample)
 
             proposal.print_genotype()
+            print("Accuracy: ", proposal.accuracy)
+            print("Traintime: ", proposal.training_time)
             print("Fitness: ", proposal.fitness)
             print("Bestfit: ", current_ind[0])
 
@@ -251,7 +263,7 @@ class Lineage(object):
 
             if acceptance_ratio > 1:
 
-                current_ind = (proposal.fitness, proposal.training_time, proposal.genotype, proposal.test_time)
+                current_ind = (proposal.fitness, proposal.training_time, proposal.genotype, proposal.test_time, proposal.accuracy)
 
                 print("New best genotype")
 
