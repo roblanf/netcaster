@@ -244,24 +244,25 @@ class Lineage(object):
                 proposal_genotype = proposal.genotype
 
             proposal.get_fitness(X_train_sample, Y_train_sample, X_val_sample, Y_val_sample)
+            acceptance_ratio = proposal.fitness**100 / current_ind[0]**100
 
             proposal.print_genotype()
             print("Accuracy: ", proposal.accuracy)
             print("Traintime: ", proposal.training_time)
             print("Fitness: ", proposal.fitness)
-            print("Bestfit: ", current_ind[0])
 
 
-            acceptance_ratio = proposal.fitness / current_ind[0]
 
-            if type=='climb' and acceptance_ratio > 1:
+            if type=='climb' and proposal.fitness > current_ind[0]:
 
                 current_ind = (proposal.fitness, proposal.training_time, proposal.genotype, proposal.test_time, proposal.accuracy)
+                print("Bestfit: ", current_ind[0])
                 print("New best genotype")
 
             elif type=='mcmc' and acceptance_ratio > np.random.uniform(0, 1):
                 
                 current_ind = (proposal.fitness, proposal.training_time, proposal.genotype, proposal.test_time, proposal.accuracy)
+                print("Acceptance ratio: ", acceptance_ratio)
                 print("MCMC proposal accepted")
 
             self.lineage.append([current_ind])
