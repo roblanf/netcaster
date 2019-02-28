@@ -71,6 +71,7 @@ class Lineage(object):
 
         pop.sort(key=lambda tup: tup[0])
         self.lineage.append(pop)
+        self.save_lineage()
 
         return(pop)
 
