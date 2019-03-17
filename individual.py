@@ -52,10 +52,10 @@ class Individual(object):
                     "indel": indel}
 
         # number of conv and pooling layers at the start
-        num_cp_layers = np.random.randint(2, 8)
+        num_cp_layers = np.random.randint(2, 5)
 
         # number of fully connected layers
-        num_d_layers = np.random.randint(1, 3)
+        num_d_layers = np.random.randint(2, 5)
 
         network = []
         for i in range(num_cp_layers):
@@ -70,10 +70,10 @@ class Individual(object):
         for i in range(num_d_layers):
             network.append(random_d_layer())
 
-        epochs = np.random.randint(5, 20)
-        epochs = np.random.randint(1, 2) # for quick testing
+        epochs = np.random.randint(3, 5)
+        #epochs = np.random.randint(1, 2) # for quick testing
 
-        training = [512]*epochs # let's start simple
+        training = [1024]*epochs # let's start simple
 
         # genotype has parameters, then network architecture, then training epochs
         genotype = {'params': params, 'network': network, 'training': training}
@@ -142,12 +142,11 @@ class Individual(object):
     def get_fitness(self, X_train, Y_train, X_val, Y_val):
         # a general function to return the fitness of any individual
         # and calculate it if it hasn't already been calculated
-
+        
         if self.fitness:
             return(self.fitness)
 
         if self.parents == None:
-
             if self.genotype == None:
                 while(self.accuracy == None):
                     try: 
@@ -160,6 +159,7 @@ class Individual(object):
                         pass
 
             else: # genotype is already specified, e.g. by loading it in
+                
                 try:
                     self.build_network()
                     self.train_network(X_train, Y_train)
@@ -176,10 +176,11 @@ class Individual(object):
                 self.test_network(X_val, Y_val)
             except:
                 self.accuracy = 0
+                
         # define fitness
         # this is 90% accuracy, and 10% training time
         # where we don't reward training times lower than min_time seconds
-        min_time = 60
+        min_time = 5
         #self.fitness = self.accuracy * 0.9 + (min_time/np.max([self.training_time, min_time])) * 0.1
 
         # or we can just have fitness == accuracy
@@ -242,7 +243,7 @@ class Individual(object):
     def offspring_genotype(self):
         # make a genotype from N parents
         self.genotype = {} # reset the genotype
-
+        
         # params
         offspring_params = self.get_offspring_params()
         self.genotype["params"] = offspring_params
@@ -266,10 +267,10 @@ class Individual(object):
         if self.mcmc==False:
             # just so the mutation rate never actually stays at zero forever
             if mutrate<0.1:
-                min_mutrate = 0.01
+                min_mutrate = 0.1
             else:
                 min_mutrate = mutrate
-            mutrate = mutate_float_fixed(mutrate, size = 0.1, limits = [0, 1], mutrate = min_mutrate)
+            mutrate = mutate_float_fixed(mutrate, size = 0.1, limits = [0.1, 1], mutrate = min_mutrate)
         else:
             mutrate = 0.2
 
@@ -281,7 +282,7 @@ class Individual(object):
         indel = current_parent["params"]["indel"]
         if self.mcmc==False:
             current_parent = self.recombination(current_parent)
-            indel = mutate_float_fixed(indel, size = 0.1, limits = [0, 1], mutrate = mutrate)
+            indel = mutate_float_fixed(indel, size = 0.1, limits = [0.2, 1], mutrate = mutrate)
 
         params =   {"mutation": mutrate,
                     "optimiser": optimiser,
@@ -311,11 +312,18 @@ class Individual(object):
         except:
             first_full = np.Inf
 
+        try: 
+            last_cp = np.max[layer_types.index("conv"), layer_types.index("pool")]
+        except:
+            last_cp = np.Inf
+            
         # now iterate over the layers, choosing layers with recombination 
         # from the two parents
         # but don't allow full layers until first_full
         current_parent = self.recombination(current_parent)
         offspring = []
+        
+        
         while len(offspring) < num_layers:
 
             # keep trying the parents at random until you get one with this layer index
@@ -326,10 +334,9 @@ class Individual(object):
             new_layer = current_parent["network"][len(offspring)]
 
             if new_layer["type"] == "full" and len(offspring)<first_full:
-                pass
+                current_parent = self.recombination(current_parent)
             else:
                 offspring.append(new_layer)
-
 
         # now we can add or delete a layer at random
         if np.random.uniform(0, 1) < indel:
@@ -341,10 +348,14 @@ class Individual(object):
 
             if change == +1:
                 insertion_point = np.random.randint(0, len(offspring)+1) # +1 to insert at the end
-
-                if insertion_point >= first_full:
+                rd = random_d_layer()
+                rcpbd = random_cpbd_layer()
+                
+                if insertion_point >= last_cp: # after the last conv/pool layer, anything goes
+                    insertion_layer = np.random.choice([rd, rcpbd])
+                elif insertion_point >= first_full: # after a full layer, you have to have full, batchnorm, drop
                     insertion_layer = random_d_layer()
-                else:
+                else: # before the last conv/pool layer, you have to have conv, pool, batch, drop
                     insertion_layer = random_cpbd_layer()
 
                 offspring.insert(insertion_point, insertion_layer)
