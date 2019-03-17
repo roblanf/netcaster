@@ -64,7 +64,7 @@ class Lineage(object):
         for i in range(N):
             random_ind = Individual(self.input_shape, self.out_config, self.loss)
             random_ind.get_fitness(X_train_sample, Y_train_sample, X_val_sample, Y_val_sample)
-            pop.append((random_ind.fitness, random_ind.training_time, random_ind.genotype, random_ind.test_time, random_ind.accuracy))
+            pop.append((random_ind.fitness, random_ind.training_time, random_ind.genotype, random_ind.test_time, random_ind.accuracy, "random_initialisation"))
 
             self.clean_up()
             del random_ind
@@ -88,7 +88,7 @@ class Lineage(object):
         for g in genotypes:
             ind = Individual(self.input_shape, self.out_config, self.loss, genotype = g)
             ind.get_fitness(X_train_sample, Y_train_sample, X_val_sample, Y_val_sample)
-            pop.append((ind.fitness, ind.training_time, ind.genotype, ind.test_time, ind.accuracy))
+            pop.append((ind.fitness, ind.training_time, ind.genotype, ind.test_time, ind.accuracy, "recalculated"))
 
             self.clean_up()
             del ind
@@ -168,12 +168,12 @@ class Lineage(object):
 
         with open(os.path.join(self.outputdir, '%s.tsv' %(self.name)), 'a') as csvout:
             for p in pop:
-                csvout.write("%d\t%f\t%f\t%f\t%s\n" %(generation, p[0],p[1],p[3],p[2]))
+                csvout.write("%d\t%f\t%f\t%f\t%s\t%f\t%s\n" %(generation, p[4],p[1],p[3],p[2],p[0],p[5]))
 
         with open(os.path.join(self.outputdir, '%s.pkl') %(self.name), 'wb') as pklout:
             pickle.dump(self.lineage, pklout)
 
-    def evolve(self, generations, num_parents = 2, keep = 0, kill = 0, selection = "rank2"):
+    def evolve(self, generations, num_parents = 2, keep = 0, kill = 0, kill_slow = 0, selection = "rank2"):
         # evolve a population
         # generations is a list of population sizes
         gen = 1
@@ -188,20 +188,34 @@ class Lineage(object):
 
             offspring = []
 
+
+            
             # keep the fittest keep individuals in the population
             for i in range(len(pop)-keep, len(pop)):
                 offspring.append(pop[i])
 
             # kill the worst ones
             for i in range(kill):
-                del pop[i]
+                del pop[0]
 
+            # kill the slowest ones:
+            pop.sort(key=lambda tup: tup[1])
+            print(pop)
+            for i in range(kill_slow):
+                print("killing training time:", pop[-1][1])
+                del pop[-1]
+            
+            # re-sort to fitness
+            pop.sort(key=lambda tup: tup[0])
+            print(pop)
+
+                
             # breed the rest of offspring from what's left of pop
             while len(offspring) < g:
                 parents = self.choose_n_parents(pop, num_parents, selection)
                 f1 = Individual(self.input_shape, self.out_config, self.loss, parents=parents)
                 f1.get_fitness(X_train_sample, Y_train_sample, X_val_sample, Y_val_sample)
-                offspring.append((f1.fitness, f1.training_time, f1.genotype, f1.test_time, f1.accuracy))
+                offspring.append((f1.fitness, f1.training_time, f1.genotype, f1.test_time, f1.accuracy, selection))
                 self.clean_up()
                 del f1
                 
@@ -256,13 +270,13 @@ class Lineage(object):
 
             if type=='climb' and proposal.fitness > current_ind[0]:
 
-                current_ind = (proposal.fitness, proposal.training_time, proposal.genotype, proposal.test_time, proposal.accuracy)
+                current_ind = (proposal.fitness, proposal.training_time, proposal.genotype, proposal.test_time, proposal.accuracy, type)
                 print("Bestfit: ", current_ind[0])
                 print("New best genotype")
 
             elif type=='mcmc' and acceptance_ratio > np.random.uniform(0, 1):
                 
-                current_ind = (proposal.fitness, proposal.training_time, proposal.genotype, proposal.test_time, proposal.accuracy)
+                current_ind = (proposal.fitness, proposal.training_time, proposal.genotype, proposal.test_time, proposal.accuracy, type)
                 print("Acceptance ratio: ", acceptance_ratio)
                 print("MCMC proposal accepted")
 
