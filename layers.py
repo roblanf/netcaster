@@ -164,7 +164,7 @@ def print_layer(layer):
         print("full: %d"  %(layer["units"]))
 
     if layer["type"] == "conv":
-        print("conv: %dx%dx%d, s=%dx%d, p=%s" %(layer["kernel_h"], layer["kernel_w"], layer["filters"], layer["strides_h"], layer["strides_W"], layer["padding"]))
+        print("conv: %dx%dx%d, s=%dx%d, p=%s" %(layer["kernel_h"], layer["kernel_w"], layer["filters"], layer["strides_h"], layer["strides_w"], layer["padding"]))
 
     if layer["type"] == "pool":
         print("pool: %dx%d, s=%dx%d, p=%s" %(layer["pool_size_h"], layer["pool_size_w"], layer["strides_h"], layer["strides_w"], layer["padding"]))
