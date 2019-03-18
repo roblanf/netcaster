@@ -97,31 +97,39 @@ hillclimb.evolve([2]*10, num_parents = 1, kill = 1, keep=1)
 # Let's specify the lenet-5 network first...
 conv1 =    {"type": "conv",
             "filters": 6,
-            "kernel": 5,
-            "strides": 1,
+            "kernel_h": 5,
+            "kernel_w": 5,
+            "strides_h": 1,
+            "strides_w": 1,
             "padding": "valid",
             "mutrate": 0.1,
             "dropout": 0.0,
             "norm": 0}
 
 pool1 =    {"type": "pool",
-			"pool_size": 2,
-			"strides": 2,
+                  "pool_size_h": 2,
+                  "pool_size_w": 2,
+                  "strides_h": 2,
+                  "strides_w": 2,
 			"padding": "valid",
 			"mutrate": 0.1}
 
 conv2 =    {"type": "conv",
             "filters": 16,
-            "kernel": 5,
-            "strides": 1,
+            "kernel_h": 5,
+            "kernel_w": 5,
+            "strides_h": 1,
+            "strides_w": 1,
             "padding": "valid",
             "mutrate": 0.1,
             "dropout": 0.0,
             "norm": 0}
 
 pool2 =    {"type": "pool",
-			"pool_size": 2,
-			"strides": 2,
+                  "pool_size_h": 2,
+                  "pool_size_w": 2,
+                  "strides_h": 2,
+                  "strides_w": 2,
 			"padding": "valid",
 			"mutrate": 0.1}
 

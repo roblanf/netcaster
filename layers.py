@@ -73,14 +73,14 @@ def add_conv_layer(layer, input_shape):
 
     if input_shape == False:
         new_layer = Conv2D(filters = layer["filters"],
-                           kernel_size = (layer["kernel"], layer["kernel"]),
-                           strides = (layer["strides"], layer["strides"]),
+                           kernel_size = (layer["kernel_h"], layer["kernel_w"]),
+                           strides = (layer["strides_h"], layer["strides_w"]),
                            padding = layer["padding"],
                            activation = "relu")
     else:
         new_layer = Conv2D(filters = layer["filters"],
-                           kernel_size = (layer["kernel"], layer["kernel"]),
-                           strides = (layer["strides"], layer["strides"]),
+                           kernel_size = (layer["kernel_h"], layer["kernel_w"]),
+                           strides = (layer["strides_h"], layer["strides_w"]),
                            padding = layer["padding"],
                            activation = "relu",
                            input_shape = input_shape)
@@ -93,8 +93,10 @@ def random_conv_layer():
 
     conv_layer =    {"type": "conv",
                      "filters": np.random.randint(2,24),
-                     "kernel": np.random.randint(1,10),
-                     "strides": np.random.randint(1,3),
+                     "kernel_h": np.random.randint(1,10),
+                     "kernel_w": np.random.randint(1,10),
+                     "strides_h": np.random.randint(1,3),
+                     "strides_w": np.random.randint(1,3),
                      "padding": np.random.choice(["valid", "same"]),
                      "mutrate": base_mr}
 
@@ -104,13 +106,13 @@ def random_conv_layer():
 def add_pool_layer(layer, input_shape):
 
     if input_shape == False:
-        new_layer = MaxPooling2D(pool_size = (layer["pool_size"], layer["pool_size"]),
-                                 strides = (layer["strides"], layer["strides"]),
+        new_layer = MaxPooling2D(pool_size = (layer["pool_size_h"], layer["pool_size_h"]),
+                                 strides = (layer["strides_h"], layer["strides_w"]),
                                  padding = layer["padding"])
 
     else:
-        new_layer = MaxPooling2D(pool_size = (layer["pool_size"], layer["pool_size"]),
-                                 strides = (layer["strides"], layer["pool_size"]),
+        new_layer = MaxPooling2D(pool_size = (layer["pool_size_h"], layer["pool_size_w"]),
+                                 strides = (layer["strides_h"], layer["pool_size_w"]),
                                  padding = layer["padding"],
                                  input_shape = input_shape)
 
@@ -123,8 +125,10 @@ def add_pool_layer(layer, input_shape):
 def random_pool_layer():
 
     pool_layer =    {"type": "pool",
-                     "pool_size": np.random.randint(2,5),
-                     "strides": np.random.randint(1,3),
+                     "pool_size_h": np.random.randint(2,5),
+                     "pool_size_w": np.random.randint(2,5),
+                     "strides_h": np.random.randint(1,3),
+                     "strides_w": np.random.randint(1,3),
                      "padding": np.random.choice(["valid", "same"]),
                      "mutrate": base_mr}
 
@@ -160,10 +164,10 @@ def print_layer(layer):
         print("full: %d"  %(layer["units"]))
 
     if layer["type"] == "conv":
-        print("conv: %dx%dx%d, s=%d, p=%s" %(layer["kernel"], layer["kernel"], layer["filters"], layer["strides"], layer["padding"]))
+        print("conv: %dx%dx%d, s=%dx%d, p=%s" %(layer["kernel_h"], layer["kernel_w"], layer["filters"], layer["strides_h"], layer["strides_W"], layer["padding"]))
 
     if layer["type"] == "pool":
-        print("pool: %dx%d, s=%d, p=%s" %(layer["pool_size"], layer["pool_size"], layer["strides"], layer["padding"]))
+        print("pool: %dx%d, s=%dx%d, p=%s" %(layer["pool_size_h"], layer["pool_size_w"], layer["strides_h"], layer["strides_w"], layer["padding"]))
 
     if layer["type"] == "dropout":
         print("drop: %.2f" %(layer["dropout"]))

@@ -146,8 +146,10 @@ def mutate_dropout_layer(layer, mutrate):
 def mutate_conv_layer(layer, mutrate):
 
     layer["filters"] = mutate_int_fixed(layer["filters"], 2, [1, 1000], mutrate)
-    layer["kernel"] = mutate_int_fixed(layer["kernel"], 2, [1, 1000], mutrate)
-    layer["strides"] = mutate_int_fixed(layer["strides"], 2, [1, 1000], mutrate)
+    layer["kernel_h"] = mutate_int_fixed(layer["kernel_h"], 2, [1, 1000], mutrate)
+    layer["kernel_w"] = mutate_int_fixed(layer["kernel_w"], 2, [1, 1000], mutrate)
+    layer["strides_h"] = mutate_int_fixed(layer["strides_h"], 2, [1, 1000], mutrate)
+    layer["strides_w"] = mutate_int_fixed(layer["strides_w"], 2, [1, 1000], mutrate)
 
     if np.random.uniform(0, 1) < mutrate:
         layer["padding"] = np.random.choice(["valid", "same"])
@@ -157,8 +159,10 @@ def mutate_conv_layer(layer, mutrate):
 
 def mutate_pool_layer(layer, mutrate):
 
-    layer["pool_size"] = mutate_int_fixed(layer["pool_size"], 2, [1, 1000], mutrate)
-    layer["strides"] = mutate_int_fixed(layer["strides"], 2, [1, 1000], mutrate)
+    layer["pool_size_h"] = mutate_int_fixed(layer["pool_size_h"], 2, [1, 1000], mutrate)
+    layer["pool_size_w"] = mutate_int_fixed(layer["pool_size_w"], 2, [1, 1000], mutrate)
+    layer["strides_h"] = mutate_int_fixed(layer["strides_h"], 2, [1, 1000], mutrate)
+    layer["strides_w"] = mutate_int_fixed(layer["strides_w"], 2, [1, 1000], mutrate)
 
     if np.random.uniform(0, 1) < mutrate:
         layer["padding"] = np.random.choice(["valid", "same"])
