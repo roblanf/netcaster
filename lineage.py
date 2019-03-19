@@ -200,14 +200,12 @@ class Lineage(object):
 
             # kill the slowest ones:
             pop.sort(key=lambda tup: tup[1])
-            print(pop)
             for i in range(kill_slow):
                 print("killing training time:", pop[-1][1])
                 del pop[-1]
             
             # re-sort to fitness
             pop.sort(key=lambda tup: tup[0])
-            print(pop)
 
                 
             # breed the rest of offspring from what's left of pop
@@ -223,14 +221,8 @@ class Lineage(object):
             self.lineage.append(offspring)
             self.save_lineage()
 
-
-            print("\n\nBest individual of generation", gen)
             gen += 1
             current_ind = self.lineage[-1][-1]
-            print_genotype(current_ind[2])
-            print("Accuracy: ", current_ind[4])
-            print("Traintime: ", current_ind[1])
-            print("Fitness: ", current_ind[0], "\n")
 
     def explore(self, iterations, type='climb'):
         # evolve a lineage using hill climbing
