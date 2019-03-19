@@ -104,13 +104,19 @@ def mutate_addition(value, size, limits, mutrate):
 
     return value
 
-def mutate_product(value, size, limits, mutrate):
+def mutate_product(value, size, limits, mutrate, output="float", dist="uniform"):
     # mutate a float of value, by amount size, within limits
     if np.random.uniform(0, 1) < mutrate:
 
         # choose a size from -size to +size
         # equal probability - and +
-        mutation_size = np.random.uniform(1.0, size)
+        if dist=="uniform":
+            mutation_size = np.random.uniform(1.0, size)
+
+        if dist=="exponential":
+            # we add 1 so that it's always >1, then we * or / later
+            mutation_size = 1 + np.random.exponential(scale = size)
+
         if np.random.uniform(0, 1) < 0.5:
             value = value / mutation_size
         else:
@@ -119,6 +125,9 @@ def mutate_product(value, size, limits, mutrate):
         # check the limits
         if value < limits[0]: value = limits[0]
         if value > limits[1]: value = limits[1]
+
+        if output == "int":
+            np.int(np.round(value))
 
     return value
 
@@ -145,11 +154,11 @@ def mutate_dropout_layer(layer, mutrate):
 
 def mutate_conv_layer(layer, mutrate):
 
-    layer["filters"] = mutate_int_fixed(layer["filters"], 2, [1, 1000], mutrate)
-    layer["kernel_h"] = mutate_int_fixed(layer["kernel_h"], 2, [1, 1000], mutrate)
-    layer["kernel_w"] = mutate_int_fixed(layer["kernel_w"], 2, [1, 1000], mutrate)
-    layer["strides_h"] = mutate_int_fixed(layer["strides_h"], 2, [1, 1000], mutrate)
-    layer["strides_w"] = mutate_int_fixed(layer["strides_w"], 2, [1, 1000], mutrate)
+    layer["filters"] = mutate_product(layer["filters"], 2, [1, 2000], mutrate, output="int", dist="exponential")
+    layer["kernel_h"] = mutate_product(layer["kernel_h"], 2, [1, 2000], mutrate, output="int", dist="exponential")
+    layer["kernel_w"] = mutate_product(layer["kernel_w"], 2, [1, 2000], mutrate, output="int", dist="exponential")
+    layer["strides_h"] = mutate_product(layer["strides_h"], 2, [1, 2000], mutrate, output="int", dist="exponential")
+    layer["strides_w"] = mutate_product(layer["strides_w"], 2, [1, 2000], mutrate, output="int", dist="exponential")
 
     if np.random.uniform(0, 1) < mutrate:
         layer["padding"] = np.random.choice(["valid", "same"])
@@ -159,10 +168,10 @@ def mutate_conv_layer(layer, mutrate):
 
 def mutate_pool_layer(layer, mutrate):
 
-    layer["pool_size_h"] = mutate_int_fixed(layer["pool_size_h"], 2, [1, 1000], mutrate)
-    layer["pool_size_w"] = mutate_int_fixed(layer["pool_size_w"], 2, [1, 1000], mutrate)
-    layer["strides_h"] = mutate_int_fixed(layer["strides_h"], 2, [1, 1000], mutrate)
-    layer["strides_w"] = mutate_int_fixed(layer["strides_w"], 2, [1, 1000], mutrate)
+    layer["pool_size_h"] = mutate_product(layer["pool_size_h"], 2, [1, 2000], mutrate, output="int", dist="exponential")
+    layer["pool_size_w"] = mutate_product(layer["pool_size_w"], 2, [1, 2000], mutrate, output="int", dist="exponential")
+    layer["strides_h"] = mutate_product(layer["strides_h"], 2, [1, 2000], mutrate, output="int", dist="exponential")
+    layer["strides_w"] = mutate_product(layer["strides_w"], 2, [1, 2000], mutrate, output="int", dist="exponential")
 
     if np.random.uniform(0, 1) < mutrate:
         layer["padding"] = np.random.choice(["valid", "same"])
