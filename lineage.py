@@ -209,7 +209,7 @@ class Lineage(object):
             # always kill individuals with fitness == 0; otherwise they can still participate in rank selection
             kill_zero = 0
             for i in range(len(pop)):
-                if pop[i].fitness == 0: kill_zero += 1
+                if pop[i][0] == 0: kill_zero += 1
             
             for i in range(kill_zero):
                 del pop[0]
