@@ -42,7 +42,7 @@ class Lineage(object):
             if recalculate_fitness:
                 # useful if you have different train / test data
                 pop = self.recalculate_last_gen()
-
+            
         else:
             # founders is an int of a population size
             self.random_population(founders)
@@ -74,8 +74,7 @@ class Lineage(object):
         self.save_lineage()
 
         return(pop)
-
-
+    
     def recalculate_last_gen(self):
         # make a population from a list of one or more genotypes
         pop = self.lineage[-1]
@@ -207,7 +206,14 @@ class Lineage(object):
             # re-sort to fitness
             pop.sort(key=lambda tup: tup[0])
 
-                
+            # always kill individuals with fitness == 0; otherwise they can still participate in rank selection
+            kill_zero = 0
+            for i in range(len(pop)):
+                if pop[i].fitness == 0: kill_zero += 1
+            
+            for i in range(kill_zero):
+                del pop[0]
+                    
             # breed the rest of offspring from what's left of pop
             while len(offspring) < g:
                 parents = self.choose_n_parents(pop, num_parents, selection)
