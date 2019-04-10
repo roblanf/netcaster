@@ -211,7 +211,7 @@ class Lineage(object):
         with open(os.path.join(self.outputdir, '%s.pkl') %(self.name), 'wb') as pklout:
             pickle.dump(self.lineage, pklout)
 
-    def evolve(self, generations, num_parents = 2, keep = 0, kill = 0, kill_slow = 0, selection = "rank2"):
+    def evolve(self, generations, num_parents = 2, keep = 0, kill = 0, kill_slow = 0, selection = "rank2", max_time = np.inf):
         # evolve a population
         # generations is a list of population sizes
         gen = 1
@@ -242,6 +242,11 @@ class Lineage(object):
                 print("killing training time:", pop[-1][1])
                 del pop[-1]
             
+            # kill anything with a training time > max_time
+            for k, ind in enumerate(pop):
+                if ind[1] < max_time:
+                    del pop[k]
+
             # re-sort to fitness
             pop.sort(key=lambda tup: tup[0])
 
