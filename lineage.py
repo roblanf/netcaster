@@ -30,6 +30,7 @@ class Lineage(object):
         self.lineage = []               # a list to contain the lists of genotype / fitness tuples that represent each population
         self.outputdir = outputdir    # filepath for saving output
         self.name = name                # name for this lineage, pertains to output files
+        self.cache = {}                 # a cache for genotypes and data
 
     def initialise(self, founders = None, recalculate_fitness = False):
         # founders is a file path to a lineage.pkl file - a pkl file containing a list of lists of genotypes
@@ -47,6 +48,35 @@ class Lineage(object):
             # founders is an int of a population size
             self.random_population(founders)
 
+    def add_ind_to_pop(self, ind, pop, X_train_sample, Y_train_sample, X_val_sample, Y_val_sample, notes = ""):
+        # add an individual to a population, and cache it too
+
+        # the individual ind has just a genotype, and no fitness yet
+        if ind.g_md5 not in self.cache:
+            # ind is not already in the cache
+            # which means we need to calculate fitness etc. then add to cache
+            ind.get_fitness(X_train_sample, Y_train_sample, X_val_sample, Y_val_sample)
+
+            ind_summary = (ind.fitness, 
+                           ind.training_time, 
+                           ind.genotype, 
+                           ind.test_time, 
+                           ind.accuracy, 
+                           notes)
+
+            self.cache[ind.g_md5] = ind_summary
+
+        else:
+
+            ind_summary = self.cache[ind.g_md5]
+
+        # add the individual
+        pop.append(ind_summary)
+
+        return(pop)
+
+
+
     def clean_up(self):
         # clean up a keras memory leak following https://stackoverflow.com/questions/48796619/why-is-tf-keras-inference-way-slower-than-numpy-operations
         clear_session()
@@ -63,9 +93,10 @@ class Lineage(object):
         pop = []
         for i in range(N):
             random_ind = Individual(self.input_shape, self.out_config, self.loss)
-            random_ind.get_fitness(X_train_sample, Y_train_sample, X_val_sample, Y_val_sample)
-            pop.append((random_ind.fitness, random_ind.training_time, random_ind.genotype, random_ind.test_time, random_ind.accuracy, "random_initialisation"))
-
+            
+            random_ind.make_genotype()
+            pop = self.add_ind_to_pop(random_ind, pop, X_train_sample, Y_train_sample, X_val_sample, Y_val_sample, notes = "random_initialisation")
+            
             self.clean_up()
             del random_ind
 
@@ -86,8 +117,9 @@ class Lineage(object):
         pop = []
         for g in genotypes:
             ind = Individual(self.input_shape, self.out_config, self.loss, genotype = g)
-            ind.get_fitness(X_train_sample, Y_train_sample, X_val_sample, Y_val_sample)
-            pop.append((ind.fitness, ind.training_time, ind.genotype, ind.test_time, ind.accuracy, "recalculated"))
+
+            ind.make_genotype()
+            pop = self.add_ind_to_pop(ind, pop, X_train_sample, Y_train_sample, X_val_sample, Y_val_sample, notes = "from_last")
 
             self.clean_up()
             del ind
@@ -99,6 +131,13 @@ class Lineage(object):
         with open(lineagepkl, 'rb') as myfile:
             self.lineage = pickle.load(myfile)
 
+        # now we rebuild the cache from the loaded individuals
+        for pop in self.lineage:
+            for ind_summary in pop:
+                g_md5 = reduced_genotype_md5(ind_summary[2])
+                self.cache[g_md5] = ind_summary
+
+            
     def subsample_val(self):
         # use a small random sample of the test data in each generation
         if self.valsize != None:
@@ -218,8 +257,9 @@ class Lineage(object):
             while len(offspring) < g:
                 parents = self.choose_n_parents(pop, num_parents, selection)
                 f1 = Individual(self.input_shape, self.out_config, self.loss, parents=parents)
-                f1.get_fitness(X_train_sample, Y_train_sample, X_val_sample, Y_val_sample)
-                offspring.append((f1.fitness, f1.training_time, f1.genotype, f1.test_time, f1.accuracy, selection))
+                f1.make_genotype()
+                offspring = self.add_ind_to_pop(f1, offspring, X_train_sample, Y_train_sample, X_val_sample, Y_val_sample, notes = selection)
+
                 self.clean_up()
                 del f1
                 
@@ -230,7 +270,7 @@ class Lineage(object):
             gen += 1
             current_ind = self.lineage[-1][-1]
 
-    def explore(self, iterations, type='climb'):
+    def explore(self, iterations, min=1.0):
         # evolve a lineage using hill climbing
         
         # get the best genotype
@@ -250,37 +290,35 @@ class Lineage(object):
             X_train_sample, Y_train_sample = self.subsample_train()
 
             # keep choosing a new individual until there's at least one mutation
-            proposal_genotype = current_ind[2]
+            offspring_genotype = current_ind[2]
             current_ind_genotype = current_ind[2]
-            while(proposal_genotype == current_ind_genotype):
-                proposal = Individual(self.input_shape, self.out_config, self.loss, parents=[current_ind_genotype], mcmc=True)
-                proposal_genotype = proposal.genotype
+            while(offspring_genotype == current_ind_genotype):
+                offspring = Individual(self.input_shape, self.out_config, self.loss, parents=[current_ind_genotype], mcmc=True)
+                offspring.make_genotype()
+                offspring_genotype = offspring.genotype
 
-            proposal.get_fitness(X_train_sample, Y_train_sample, X_val_sample, Y_val_sample)
-            acceptance_ratio = proposal.fitness**100 / current_ind[0]**100
+            pop = self.add_ind_to_pop(offspring, [], X_train_sample, Y_train_sample, X_val_sample, Y_val_sample, notes = "explore" + "_" + str(min))
 
-            proposal.print_genotype()
-            print("Accuracy: ", proposal.accuracy)
-            print("Traintime: ", proposal.training_time)
-            print("Fitness: ", proposal.fitness)
+            # get the offspring back out of the population
+            offspring = pop[-1]
 
+            acceptance_ratio = offspring[0] / current_ind[0]
 
 
-            if type=='climb' and proposal.fitness > current_ind[0]:
+            print_genotype(offspring[2])
+            print("Accuracy: ", offspring[4])
+            print("Traintime: ", offspring[1])
+            print("Fitness: ", offspring[0])
 
-                current_ind = (proposal.fitness, proposal.training_time, proposal.genotype, proposal.test_time, proposal.accuracy, type)
-                print("Bestfit: ", current_ind[0])
-                print("New best genotype")
-
-            elif type=='mcmc' and acceptance_ratio > np.random.uniform(0, 1):
+            if acceptance_ratio > np.random.uniform(min, 1):
                 
-                current_ind = (proposal.fitness, proposal.training_time, proposal.genotype, proposal.test_time, proposal.accuracy, type)
+                current_ind = offspring
                 print("Acceptance ratio: ", acceptance_ratio)
-                print("MCMC proposal accepted")
+                print("New offspring accepted")
 
             self.lineage.append([current_ind])
             self.save_lineage()
             self.clean_up()
-            del proposal
+            del offspring
 
 

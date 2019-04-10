@@ -11,6 +11,9 @@ from keras.layers import BatchNormalization
 from pprint import pprint
 from time import time
 import random
+import copy
+import hashlib
+import json
 from layers import * 
 from mutation import * 
 from optimisers import *
@@ -29,11 +32,30 @@ class Individual(object):
         self.test_time = np.Inf
         self.mcmc = mcmc                    # a flag because we evolve differently for hill climbing and mcmc
 
+    def reduced_genotype_md5(self):
+        # generate a minimally reduced representation of a genotype for comparing networks
+
+        g = copy.deepcopy(self.genotype)
+
+        # remove paramaters that don't affect network accuracy
+        g["params"].pop('mutation')
+        g["params"].pop('indel')
+
+        # generate a hash of this dict for convenience
+        # thanks to https://stackoverflow.com/questions/5417949/computing-an-md5-hash-of-a-data-structure
+        g_md5 = hashlib.md5(json.dumps(g, sort_keys=True).encode('utf-8')).hexdigest()
+
+        return(g_md5)
+
     def make_genotype(self):
         if self.parents==None:
             self.random_genotype()
         else:
             self.offspring_genotype()
+
+        # generate an md5 to help test for identical genotypes in a population
+        # this saves time training unnecessary networks that we've already seen
+        self.g_md5 = self.reduced_genotype_md5()
 
     def random_genotype(self, mutrate = 0.2, indel=0.3):
         # generate a random CNN genotype with sensible defaults
@@ -452,3 +474,17 @@ def print_genotype(genotype):
         print("optimiser: ", genotype["params"]["optimiser"])
         print("indel: ", genotype["params"]["indel"])
 
+def reduced_genotype_md5(genotype):
+    # generate a minimally reduced representation of a genotype for comparing networks
+
+    g = copy.deepcopy(genotype)
+
+    # remove paramaters that don't affect network accuracy
+    g["params"].pop('mutation')
+    g["params"].pop('indel')
+
+    # generate a hash of this dict for convenience
+    # thanks to https://stackoverflow.com/questions/5417949/computing-an-md5-hash-of-a-data-structure
+    g_md5 = hashlib.md5(json.dumps(g, sort_keys=True).encode('utf-8')).hexdigest()
+
+    return(g_md5)
