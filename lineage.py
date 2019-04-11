@@ -48,14 +48,14 @@ class Lineage(object):
             # founders is an int of a population size
             self.random_population(founders)
 
-    def add_ind_to_pop(self, ind, pop, X_train_sample, Y_train_sample, X_val_sample, Y_val_sample, notes = ""):
+    def add_ind_to_pop(self, ind, pop, X_train_sample, Y_train_sample, X_val_sample, Y_val_sample, notes = "", max_time = np.inf):
         # add an individual to a population, and cache it too
 
         # the individual ind has just a genotype, and no fitness yet
         if ind.g_md5 not in self.cache:
             # ind is not already in the cache
             # which means we need to calculate fitness etc. then add to cache
-            ind.get_fitness(X_train_sample, Y_train_sample, X_val_sample, Y_val_sample)
+            ind.get_fitness(X_train_sample, Y_train_sample, X_val_sample, Y_val_sample, max_time)
 
             ind_summary = (ind.fitness, 
                            ind.training_time, 
@@ -263,7 +263,7 @@ class Lineage(object):
                 parents = self.choose_n_parents(pop, num_parents, selection)
                 f1 = Individual(self.input_shape, self.out_config, self.loss, parents=parents)
                 f1.make_genotype()
-                offspring = self.add_ind_to_pop(f1, offspring, X_train_sample, Y_train_sample, X_val_sample, Y_val_sample, notes = selection)
+                offspring = self.add_ind_to_pop(f1, offspring, X_train_sample, Y_train_sample, X_val_sample, Y_val_sample, notes = selection, max_time = max_time)
 
                 self.clean_up()
                 del f1

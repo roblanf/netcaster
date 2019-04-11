@@ -128,7 +128,7 @@ class Individual(object):
                            loss = self.loss_function, 
                            metrics = ['accuracy'])
         
-    def train_network(self, X_train, Y_train):
+    def train_network(self, X_train, Y_train, max_time = np.inf):
         # train network based on genotype
 
         # training is a list, where each entry is an epoch and the value
@@ -140,6 +140,13 @@ class Individual(object):
         # train over each epoch
         for epoch_batch_size in self.genotype["training"]: 
             self.model.fit(X_train, Y_train, batch_size = epoch_batch_size, epochs = 1, shuffle = True, verbose = 0)
+            
+            # don't train longer than max_time
+            time_so_far = time() - start_time
+            if time_so_far > max_time:
+                # reset the model, just to be sure
+                self.model.reset_states()
+                break
 
         end_time = time()
 
@@ -161,7 +168,7 @@ class Individual(object):
         self.loss = evals[0]
         self.accuracy = evals[1] #fitness is just the test accuracy
 
-    def get_fitness(self, X_train, Y_train, X_val, Y_val):
+    def get_fitness(self, X_train, Y_train, X_val, Y_val, max_time = np.inf):
         # a general function to return the fitness of any individual
         # and calculate it if it hasn't already been calculated
         
@@ -174,7 +181,7 @@ class Individual(object):
                     try: 
                         self.make_genotype()
                         self.build_network()
-                        self.train_network(X_train, Y_train)
+                        self.train_network(X_train, Y_train, max_time)
                         self.test_network(X_val, Y_val)                        
                     except:
                         # keep trying until you find a random genotype that works
@@ -184,7 +191,7 @@ class Individual(object):
                 
                 try:
                     self.build_network()
-                    self.train_network(X_train, Y_train)
+                    self.train_network(X_train, Y_train, max_time)
                     self.test_network(X_val, Y_val)
                 except:
                     # that genotype was shit
@@ -194,7 +201,7 @@ class Individual(object):
             try:
                 self.make_genotype()
                 self.build_network()
-                self.train_network(X_train, Y_train)
+                self.train_network(X_train, Y_train, max_time)
                 self.test_network(X_val, Y_val)
             except:
                 self.accuracy = 0
